@@ -46,7 +46,8 @@ class Runner {
       Sentry.captureBreadcrumb({
         message: 'Run started',
         category: 'lifecycle',
-        data: sentryContext && sentryContext.extra,
+        // TODO is this really needed? the 'extra' data is already set at the end of sentry.js ... why put in breadcrumb?
+        data: sentryContext,
       });
 
       // User can run -G solo, -A solo, or -GA together
