@@ -10,6 +10,7 @@ const NetworkRequest = require('../lib/network-request.js');
 const assert = require('assert');
 const NetworkRecords = require('./network-records.js');
 const MainResource = require('./main-resource.js');
+const URL = require('../lib/url-shim.js');
 
 class CriticalRequestChains {
   /**
@@ -56,6 +57,19 @@ class CriticalRequestChains {
     }
 
     return ['VeryHigh', 'High', 'Medium'].includes(request.priority);
+  }
+
+  /**
+   * Same as isCritical, but also excluding requests which didn't go over the network
+   * @param {LH.Artifacts.NetworkRequest} request
+   * @param {LH.Artifacts.NetworkRequest} mainResource
+   * @return {boolean}
+   */
+  static isCriticalNetworkRequest(request, mainResource) {
+    // It's not a request loaded over the network
+    if (URL.NON_NETWORK_PROTOCOLS.includes(request.protocol)) return false;
+
+    return CriticalRequestChains.isCritical(request, mainResource);
   }
 
   /**
