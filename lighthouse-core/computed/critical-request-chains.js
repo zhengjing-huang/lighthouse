@@ -56,20 +56,10 @@ class CriticalRequestChains {
       return false;
     }
 
-    return ['VeryHigh', 'High', 'Medium'].includes(request.priority);
-  }
-
-  /**
-   * Same as isCritical, but also excluding requests which didn't go over the network
-   * @param {LH.Artifacts.NetworkRequest} request
-   * @param {LH.Artifacts.NetworkRequest} mainResource
-   * @return {boolean}
-   */
-  static isCriticalNetworkRequest(request, mainResource) {
-    // It's not a request loaded over the network
+    // It's not a request loaded over the network, it's not "critical to load"; it arrived already.
     if (URL.NON_NETWORK_PROTOCOLS.includes(request.protocol)) return false;
 
-    return CriticalRequestChains.isCritical(request, mainResource);
+    return ['VeryHigh', 'High', 'Medium'].includes(request.priority);
   }
 
   /**
