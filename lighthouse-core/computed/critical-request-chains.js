@@ -56,7 +56,7 @@ class CriticalRequestChains {
       return false;
     }
 
-    // It's not a request loaded over the network, it's not "critical to load"; it arrived already.
+    // If it's not a request loaded over the network, it's not "critical to load"; it arrived already.
     if (URL.NON_NETWORK_PROTOCOLS.includes(request.protocol)) return false;
 
     return ['VeryHigh', 'High', 'Medium'].includes(request.priority);
