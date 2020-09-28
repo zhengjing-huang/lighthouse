@@ -7,9 +7,8 @@
 
 const browserify = require('browserify');
 const fs = require('fs');
-const path = require('path');
 
-const distDir = path.join(__dirname, '..', 'dist');
+const distDir = `${__dirname}/../dist`;
 const bundleOutFile = `${distDir}/i18n-module.js`;
 const generatorFilename = `./lighthouse-core/lib/i18n/i18n-module.js`;
 
