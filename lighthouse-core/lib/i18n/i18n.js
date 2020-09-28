@@ -524,7 +524,6 @@ module.exports = {
   _formatPathAsString,
   UIStrings,
   lookupLocale,
-  locales: Object.keys(LOCALES),
   getRendererFormattedStrings,
   createIcuMessageFn,
   getFormatted,

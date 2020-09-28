@@ -168,6 +168,21 @@ class ReportUIFeatures {
     }
   }
 
+  async _getI18nModule() {
+    if (!this._swapLocaleOptions) throw new Error('must call .initSwapLocale first');
+
+    if (!window.Lighthouse || !window.Lighthouse.i18n) {
+      const script = this._document.createElement('script');
+      script.src = this._swapLocaleOptions.i18nModuleSrc;
+      this._document.body.appendChild(script);
+      await new Promise(resolve =>
+        this._document.addEventListener('lighthouseModuleLoaded-i18n', resolve, {once: true}));
+    }
+
+    // @ts-ignore: Should be loaded now.
+    return window.Lighthouse.i18n;
+  }
+
   async _enableSwapLocale() {
     const i18nModule = await this._getI18nModule();
 
@@ -183,7 +198,7 @@ class ReportUIFeatures {
       name: 'lh-locale-list',
     });
 
-    for (const locale of i18nModule.locales) {
+    for (const locale of i18nModule.availableLocales) {
       this._dom.createChildOf(datalistEl, 'option', '', {
         value: locale,
       }).textContent = locale;
@@ -195,21 +210,6 @@ class ReportUIFeatures {
     });
   }
 
-  async _getI18nModule() {
-    if (!this._swapLocaleOptions) throw new Error('must call .initSwapLocale first');
-
-    if (!window.Lighthouse || !window.Lighthouse.i18n) {
-      const script = this._document.createElement('script');
-      script.src = this._swapLocaleOptions.i18nModuleSrc;
-      this._document.body.appendChild(script);
-      await new Promise(r =>
-        this._document.addEventListener('lighthouseModuleLoaded-i18n', r, {once: true}));
-    }
-
-    // @ts-ignore: Should be loaded now.
-    return window.Lighthouse.i18n;
-  }
-
   /**
    * @param {LH.Locale} locale
    */
@@ -217,12 +217,7 @@ class ReportUIFeatures {
     if (!this._swapLocaleOptions) throw new Error('must call .initSwapLocale first');
 
     const i18nModule = await this._getI18nModule();
-
-    // TODO: locales.js maps a locale code to a locale module. Need that same mapping,
-    // but for locale code to locale module _name_, so that we can fetch w/ that same
-    // name here.
-    const localeModuleName = locale;
-    const lhlMessages = await this._swapLocaleOptions.fetchData(localeModuleName);
+    const lhlMessages = await this._swapLocaleOptions.fetchData(locale);
     if (!lhlMessages) throw new Error(`could not fetch data for locale: ${locale}`);
 
     i18nModule.registerLocaleData(locale, lhlMessages);

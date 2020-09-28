@@ -7,5 +7,6 @@
 
 module.exports = {
   swapLocale: require('./swap-locale.js'),
+  availableLocales: ['en-US'], // Is replaced, see build-i18n.module.js
   ...require('./i18n.js'),
 };

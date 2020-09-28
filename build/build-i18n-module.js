@@ -13,16 +13,26 @@ const distDir = path.join(__dirname, '..', 'dist');
 const bundleOutFile = `${distDir}/i18n-module.js`;
 const generatorFilename = `./lighthouse-core/lib/i18n/i18n-module.js`;
 
-const locales = fs.readdirSync(__dirname + '/../lighthouse-core/lib/i18n/locales/')
-  .map(f => require.resolve(`../lighthouse-core/lib/i18n/locales/${f}`));
+const localeBasenames = fs.readdirSync(__dirname + '/../lighthouse-core/lib/i18n/locales/');
+const actualLocales = localeBasenames
+  .filter(basename => basename.endsWith('.json') && !basename.endsWith('.ctc.json'))
+  .map(locale => locale.replace('.json', ''));
+const locales =
+  localeBasenames.map(f => require.resolve(`../lighthouse-core/lib/i18n/locales/${f}`));
 
 browserify(generatorFilename, {standalone: 'Lighthouse.i18n'})
   // @ts-ignore bundle.ignore does accept an array of strings.
   .ignore(locales)
   .bundle((err, src) => {
     if (err) throw err;
+
     const code = [
       src.toString(),
+      // locales.js maps a locale code to a locale module. Instead of displaying
+      // every possible locale variant, which would require somehow extracting the mapping
+      // in locales.js, we only show the locales that are exactly the name of a module. This
+      // makes dynamically fetching locale files simple.
+      `Lighthouse.i18n.availableLocales = ${JSON.stringify(actualLocales)}`,
       'document.dispatchEvent(new Event("lighthouseModuleLoaded-i18n"));',
     ].join('\n');
     fs.writeFileSync(bundleOutFile, code);
