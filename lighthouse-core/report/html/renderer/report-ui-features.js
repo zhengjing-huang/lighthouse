@@ -176,7 +176,8 @@ class ReportUIFeatures {
       script.src = this._swapLocaleOptions.i18nModuleSrc;
       this._document.body.appendChild(script);
       await new Promise(resolve =>
-        this._document.addEventListener('lighthouseModuleLoaded-i18n', resolve, {once: true}));
+        this._document.addEventListener(
+          ReportUIFeatures.Events.lighthouseI18nModuleLoaded, resolve, {once: true}));
     }
 
     // @ts-ignore: Should be loaded now.
@@ -185,13 +186,14 @@ class ReportUIFeatures {
 
   async _enableSwapLocale() {
     const i18nModule = await this._getI18nModule();
+    const currentLocale = this.json.configSettings.locale;
 
     const toolsEl = this._dom.find('.lh-tools-locale', this._document);
     const inputEl = this._dom.createChildOf(toolsEl, 'input', 'lh-locale-selector', {
       type: 'text',
       name: 'lh-locale-list',
       list: 'lh-locale-list',
-      value: this.json.configSettings.locale,
+      value: currentLocale,
     });
     const datalistEl = this._dom.createChildOf(toolsEl, 'datalist', '', {
       id: 'lh-locale-list',
@@ -199,9 +201,26 @@ class ReportUIFeatures {
     });
 
     for (const locale of i18nModule.availableLocales) {
-      this._dom.createChildOf(datalistEl, 'option', '', {
+      const optionEl = this._dom.createChildOf(datalistEl, 'option', '', {
         value: locale,
-      }).textContent = locale;
+      });
+      optionEl.textContent = locale;
+
+      // @ts-ignore
+      if (window.Intl && window.Intl.DisplayNames) {
+        // @ts-ignore
+        const currentLocaleDisplay = new Intl.DisplayNames([currentLocale], {type: 'language'});
+        // @ts-ignore
+        const optionLocaleDisplay = new Intl.DisplayNames([locale], {type: 'language'});
+
+        const currentLocaleName = currentLocaleDisplay.of(locale);
+        const optionLocaleName = optionLocaleDisplay.of(locale);
+        if (currentLocaleName !== optionLocaleName) {
+          optionEl.textContent = `${currentLocaleName} – ${optionLocaleName}`;
+        } else {
+          optionEl.textContent = currentLocaleName;
+        }
+      }
     }
 
     inputEl.addEventListener('change', () => {
@@ -940,6 +959,7 @@ class DropDown {
 }
 
 ReportUIFeatures.Events = {
+  lighthouseI18nModuleLoaded: 'lighthouseModuleLoaded-i18n',
   refreshLighthouseReport: 'refreshLighthouseReport',
 };
 
