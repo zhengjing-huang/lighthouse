@@ -1,5 +1,5 @@
 /**
- * @license Copyright 2017 Google Inc. All Rights Reserved.
+ * @license Copyright 2017 The Lighthouse Authors. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
  */
@@ -22,7 +22,7 @@ const UIStrings = {
   failureTitle: 'Displays images with incorrect aspect ratio',
   /** Description of a Lighthouse audit that tells the user why they should maintain the correct aspect ratios for all images. This is displayed after a user expands the section to see more. No character length limits. 'Learn More' becomes link text to additional documentation. */
   description: 'Image display dimensions should match natural aspect ratio. ' +
-    '[Learn more](https://web.dev/image-aspect-ratio).',
+    '[Learn more](https://web.dev/image-aspect-ratio/).',
   /**
    * @description Warning that the size information for an image was nonsensical.
    * @example {https://image.cdn.com/} url
@@ -56,7 +56,7 @@ class ImageAspectRatio extends Audit {
 
   /**
    * @param {WellDefinedImage} image
-   * @return {Error|{url: string, displayedAspectRatio: string, actualAspectRatio: string, doRatiosMatch: boolean}}
+   * @return {LH.IcuMessage|{url: string, displayedAspectRatio: string, actualAspectRatio: string, doRatiosMatch: boolean}}
    */
   static computeAspectRatios(image) {
     const url = URL.elideDataURI(image.src);
@@ -68,7 +68,7 @@ class ImageAspectRatio extends Audit {
 
     if (!Number.isFinite(actualAspectRatio) ||
       !Number.isFinite(displayedAspectRatio)) {
-      return new Error(str_(UIStrings.warningCompute, {url}));
+      return str_(UIStrings.warningCompute, {url});
     }
 
     return {
@@ -88,7 +88,7 @@ class ImageAspectRatio extends Audit {
   static audit(artifacts) {
     const images = artifacts.ImageElements;
 
-    /** @type {string[]} */
+    /** @type {LH.IcuMessage[]} */
     const warnings = [];
     /** @type {Array<{url: string, displayedAspectRatio: string, actualAspectRatio: string, doRatiosMatch: boolean}>} */
     const results = [];
@@ -109,8 +109,8 @@ class ImageAspectRatio extends Audit {
     }).forEach(image => {
       const wellDefinedImage = /** @type {WellDefinedImage} */ (image);
       const processed = ImageAspectRatio.computeAspectRatios(wellDefinedImage);
-      if (processed instanceof Error) {
-        warnings.push(processed.message);
+      if (i18n.isIcuMessage(processed)) {
+        warnings.push(processed);
         return;
       }
 

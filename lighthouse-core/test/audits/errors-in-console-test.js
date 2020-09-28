@@ -1,5 +1,5 @@
 /**
- * @license Copyright 2017 Google Inc. All Rights Reserved.
+ * @license Copyright 2017 The Lighthouse Authors. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
  */
@@ -8,7 +8,7 @@
 /* eslint-env jest */
 
 const ErrorLogsAudit = require('../../audits/errors-in-console.js');
-const assert = require('assert');
+const assert = require('assert').strict;
 
 describe('Console error logs audit', () => {
   it('passes when no console messages were found', () => {
@@ -16,7 +16,6 @@ describe('Console error logs audit', () => {
       ConsoleMessages: [],
       RuntimeExceptions: [],
     }, {options: {}});
-    assert.equal(auditResult.numericValue, 0);
     assert.equal(auditResult.score, 1);
     assert.ok(!auditResult.displayValue, 0);
     assert.equal(auditResult.details.items.length, 0);
@@ -35,7 +34,6 @@ describe('Console error logs audit', () => {
       ],
       RuntimeExceptions: [],
     }, {options: {}});
-    assert.equal(auditResult.numericValue, 0);
     assert.equal(auditResult.score, 1);
     assert.equal(auditResult.details.items.length, 0);
   });
@@ -81,7 +79,6 @@ describe('Console error logs audit', () => {
       }],
     }, {options: {}});
 
-    assert.equal(auditResult.numericValue, 3);
     assert.equal(auditResult.score, 0);
     assert.equal(auditResult.details.items.length, 3);
     assert.equal(auditResult.details.items[0].url, 'http://www.example.com/favicon.ico');
@@ -107,7 +104,6 @@ describe('Console error logs audit', () => {
       ],
       RuntimeExceptions: [],
     }, {options: {}});
-    assert.equal(auditResult.numericValue, 1);
     assert.equal(auditResult.score, 0);
     assert.equal(auditResult.details.items.length, 1);
     // url is undefined
@@ -138,7 +134,6 @@ describe('Console error logs audit', () => {
         },
       }],
     }, {options: {}});
-    assert.equal(auditResult.numericValue, 1);
     assert.equal(auditResult.score, 0);
     assert.equal(auditResult.details.items.length, 1);
     assert.strictEqual(auditResult.details.items[0].url, 'http://example.com/fancybox.js');

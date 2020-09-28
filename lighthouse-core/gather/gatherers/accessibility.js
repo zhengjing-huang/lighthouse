@@ -1,11 +1,11 @@
 /**
- * @license Copyright 2016 Google Inc. All Rights Reserved.
+ * @license Copyright 2016 The Lighthouse Authors. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
  */
 'use strict';
 
-/* global window, document, getOuterHTMLSnippet, getNodePath, getNodeLabel */
+/* global window, document, getNodeDetails */
 
 const Gatherer = require('./gatherer.js');
 const fs = require('fs');
@@ -20,7 +20,7 @@ const pageFunctions = require('../../lib/page-functions.js');
  */
 /* istanbul ignore next */
 function runA11yChecks() {
-  // @ts-ignore axe defined by axeLibSource
+  // @ts-expect-error axe defined by axeLibSource
   return window.axe.run(document, {
     elementRef: true,
     runOnly: {
@@ -35,6 +35,7 @@ function runA11yChecks() {
       'tabindex': {enabled: true},
       'accesskeys': {enabled: true},
       'heading-order': {enabled: true},
+      'meta-viewport': {enabled: true},
       'duplicate-id': {enabled: false},
       'table-fake-caption': {enabled: false},
       'td-has-header': {enabled: false},
@@ -44,25 +45,50 @@ function runA11yChecks() {
       'html-xml-lang-mismatch': {enabled: false},
       'blink': {enabled: false},
       'server-side-image-map': {enabled: false},
+      'identical-links-same-purpose': {enabled: false},
+      'no-autoplay-audio': {enabled: false},
+      'svg-img-alt': {enabled: false},
+      'audio-caption': {enabled: false},
     },
-    // @ts-ignore
-  }).then(axeResult => {
+    // @ts-expect-error
+  }).then(axeResults => {
+    // axe just scrolled the page, scroll back to the top of the page so that element positions
+    // are relative to the top of the page
+    document.documentElement.scrollTop = 0;
+
+    // @ts-expect-error
+    const augmentAxeNodes = result => {
+      // @ts-expect-error
+      result.nodes.forEach(node => {
+        // @ts-expect-error - getNodeDetails put into scope via stringification
+        Object.assign(node, getNodeDetails(node.element));
+        // avoid circular JSON concerns
+        node.element = node.any = node.all = node.none = undefined;
+      });
+
+      // Ensure errors can be serialized over the protocol
+      if (result.error instanceof Error) {
+        result.error = {
+          name: result.error.name,
+          message: result.error.message,
+          stack: result.error.stack,
+          errorNode: result.error.errorNode,
+        };
+      }
+    };
+
     // Augment the node objects with outerHTML snippet & custom path string
-    // @ts-ignore
-    axeResult.violations.forEach(v => v.nodes.forEach(node => {
-      // @ts-ignore - getNodePath put into scope via stringification
-      node.path = getNodePath(node.element);
-      // @ts-ignore - getOuterHTMLSnippet put into scope via stringification
-      node.snippet = getOuterHTMLSnippet(node.element);
-      // @ts-ignore - getNodeLabel put into scope via stringification
-      node.nodeLabel = getNodeLabel(node.element);
-      // avoid circular JSON concerns
-      node.element = node.any = node.all = node.none = undefined;
-    }));
+    axeResults.violations.forEach(augmentAxeNodes);
+    axeResults.incomplete.forEach(augmentAxeNodes);
 
     // We only need violations, and circular references are possible outside of violations
-    axeResult = {violations: axeResult.violations, notApplicable: axeResult.inapplicable};
-    return axeResult;
+    axeResults = {
+      violations: axeResults.violations,
+      notApplicable: axeResults.inapplicable,
+      incomplete: axeResults.incomplete,
+      version: axeResults.testEngine.version,
+    };
+    return axeResults;
   });
 }
 
@@ -74,9 +100,7 @@ class Accessibility extends Gatherer {
   afterPass(passContext) {
     const driver = passContext.driver;
     const expression = `(function () {
-      ${pageFunctions.getOuterHTMLSnippetString};
-      ${pageFunctions.getNodePathString};
-      ${pageFunctions.getNodeLabelString};
+      ${pageFunctions.getNodeDetailsString};
       ${axeLibSource};
       return (${runA11yChecks.toString()}());
     })()`;

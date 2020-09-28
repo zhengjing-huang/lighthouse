@@ -1,5 +1,5 @@
 /**
- * @license Copyright 2017 Google Inc. All Rights Reserved.
+ * @license Copyright 2017 The Lighthouse Authors. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
  */
@@ -162,7 +162,7 @@ const expectations = [
               {
                 source: {type: 'code', value: 'User Agent Stylesheet'},
                 selector: 'h6',
-                fontSize: '10px',
+                fontSize: '10.72px',
               },
               {
                 source: {type: 'url', value: /seo-tester\.html.+$/},
@@ -198,6 +198,9 @@ const expectations = [
               },
             ],
           },
+        },
+        'crawlable-anchors': {
+          score: 1,
         },
         'link-text': {
           score: 1,
@@ -242,6 +245,14 @@ const expectations = [
           explanation:
           'Text is illegible because there\'s no viewport meta tag optimized for mobile screens.',
         },
+        'crawlable-anchors': {
+          score: 0,
+          details: {
+            items: {
+              length: 4,
+            },
+          },
+        },
         'link-text': {
           score: 0,
           displayValue: '4 links found',
@@ -263,7 +274,7 @@ const expectations = [
           score: 0,
           details: {
             items: {
-              length: 3,
+              length: 5,
             },
           },
         },
@@ -308,6 +319,9 @@ const expectations = [
         'font-size': {
           score: null,
         },
+        'crawlable-anchors': {
+          score: null,
+        },
         'link-text': {
           score: null,
         },
@@ -343,7 +357,7 @@ const expectations = [
                 'tapTarget': {
                   'type': 'node',
                   /* eslint-disable max-len */
-                  'snippet': '<a data-gathered-target="zero-width-tap-target-with-overflowing-child-content" style="display: block; width: 0; white-space: nowrap">\n        <!-- TODO: having the span should not be necessary to cause a failure here, but\n             right now we don\'t try to get the client rects of children that …',
+                  'snippet': '<a data-gathered-target="zero-width-tap-target-with-overflowing-child-content" style="display: block; width: 0; white-space: nowrap">',
                   'path': '2,HTML,1,BODY,14,DIV,0,A',
                   'selector': 'body > div > a',
                   'nodeLabel': 'zero width target',
@@ -351,7 +365,7 @@ const expectations = [
                 'overlappingTarget': {
                   'type': 'node',
                   /* eslint-disable max-len */
-                  'snippet': '<a data-gathered-target="passing-tap-target-next-to-zero-width-target" style="display: block; width: 110px; height: 100px;background: #aaa;">\n        passing target\n      </a>',
+                  'snippet': '<a data-gathered-target="passing-tap-target-next-to-zero-width-target" style="display: block; width: 110px; height: 100px;background: #aaa;">',
                   'path': '2,HTML,1,BODY,14,DIV,1,A',
                   'selector': 'body > div > a',
                   'nodeLabel': 'passing target',

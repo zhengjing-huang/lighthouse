@@ -1,5 +1,5 @@
 /**
- * @license Copyright 2016 Google Inc. All Rights Reserved.
+ * @license Copyright 2016 The Lighthouse Authors. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
  */
@@ -13,10 +13,11 @@ const Audit = require('../audits/audit.js');
 const Gatherer = require('../gather/gatherers/gatherer.js');
 const assetSaver = require('../lib/asset-saver.js');
 const fs = require('fs');
-const assert = require('assert');
+const assert = require('assert').strict;
 const path = require('path');
 const rimraf = require('rimraf');
 const LHError = require('../lib/lh-error.js');
+const i18n = require('../lib/i18n/i18n.js');
 
 /* eslint-env jest */
 
@@ -153,6 +154,63 @@ describe('Runner', () => {
         expect(gatherRunnerRunSpy).toHaveBeenCalled();
         expect(saveArtifactsSpy).not.toHaveBeenCalled();
         expect(runAuditSpy).toHaveBeenCalled();
+      });
+    });
+
+    it('serializes IcuMessages in gatherMode and is able to use them in auditMode', async () => {
+      // Can use this to access shared UIStrings in i18n.js.
+      // For future changes: exact messages aren't important, just choose ones with replacements.
+      const str_ = i18n.createMessageInstanceIdFn(__filename, {});
+
+      // A gatherer that produces an IcuMessage runWarning and LighthouseError artifact.
+      class WarningAndErrorGatherer extends Gatherer {
+        afterPass(passContext) {
+          const warning = str_(i18n.UIStrings.displayValueByteSavings, {wastedBytes: 2222});
+          passContext.LighthouseRunWarnings.push(warning);
+          throw new LHError(LHError.errors.UNSUPPORTED_OLD_CHROME, {featureName: 'VRML'});
+        }
+      }
+      const gatherConfig = new Config({
+        settings: {gatherMode: artifactsPath},
+        passes: [{gatherers: [WarningAndErrorGatherer]}],
+      });
+      await Runner.run(null, {url, config: gatherConfig, driverMock});
+
+      // Artifacts are still localizable.
+      const artifacts = assetSaver.loadArtifacts(resolvedPath);
+      expect(artifacts.LighthouseRunWarnings[0]).not.toBe('string');
+      expect(artifacts.LighthouseRunWarnings[0]).toBeDisplayString('Potential savings of 2 KiB');
+      expect(artifacts.WarningAndErrorGatherer).toMatchObject({
+        name: 'LHError',
+        code: 'UNSUPPORTED_OLD_CHROME',
+        // eslint-disable-next-line max-len
+        friendlyMessage: expect.toBeDisplayString(`This version of Chrome is too old to support 'VRML'. Use a newer version to see full results.`),
+      });
+
+      // Now run auditMode using errored artifacts to ensure the errors come through.
+      class DummyAudit extends Audit {
+        static get meta() {
+          return {
+            id: 'dummy-audit',
+            title: 'Dummy',
+            description: 'Will fail because required artifact is an error',
+            requiredArtifacts: ['WarningAndErrorGatherer'],
+          };
+        }
+        static audit() {}
+      }
+      const auditConfig = new Config({
+        settings: {auditMode: artifactsPath},
+        audits: [{implementation: DummyAudit}],
+      });
+      const {lhr} = await Runner.run(null, {url, config: auditConfig});
+
+      // Messages are now localized and formatted.
+      expect(lhr.runWarnings[0]).toBe('Potential savings of 2 KiB');
+      expect(lhr.audits['dummy-audit']).toMatchObject({
+        scoreDisplayMode: 'error',
+        // eslint-disable-next-line max-len
+        errorMessage: 'Required WarningAndErrorGatherer gatherer encountered an error: UNSUPPORTED_OLD_CHROME',
       });
     });
   });
@@ -366,7 +424,7 @@ describe('Runner', () => {
       rimraf.sync(resolvedPath);
     });
 
-    it('only passes the required artifacts to the audit', async () => {
+    it('only passes the requested artifacts to the audit (no optional artifacts)', async () => {
       class SimpleAudit extends Audit {
         static get meta() {
           return {
@@ -395,6 +453,40 @@ describe('Runner', () => {
       expect(auditMockFn.mock.calls[0][0]).toEqual({
         ArtifactA: 'apple',
         ArtifactC: 'cherry',
+      });
+    });
+
+    it('only passes the requested artifacts to the audit (w/ optional artifacts)', async () => {
+      class SimpleAudit extends Audit {
+        static get meta() {
+          return {
+            id: 'simple',
+            title: 'Requires some artifacts',
+            failureTitle: 'Artifacts',
+            description: 'Test for always throwing',
+            requiredArtifacts: ['ArtifactA', 'ArtifactC'],
+            __internalOptionalArtifacts: ['ArtifactD'],
+          };
+        }
+      }
+
+      const auditMockFn = SimpleAudit.audit = jest.fn().mockReturnValue({score: 1});
+      const config = new Config({
+        settings: {
+          auditMode: __dirname + '/fixtures/artifacts/alphabet-artifacts/',
+        },
+        audits: [
+          SimpleAudit,
+        ],
+      });
+
+      const results = await Runner.run({}, {config});
+      expect(results.lhr).toMatchObject({audits: {simple: {score: 1}}});
+      expect(auditMockFn).toHaveBeenCalled();
+      expect(auditMockFn.mock.calls[0][0]).toEqual({
+        ArtifactA: 'apple',
+        ArtifactC: 'cherry',
+        ArtifactD: 'date',
       });
     });
   });
@@ -620,37 +712,12 @@ describe('Runner', () => {
           static get meta() {
             return basicAuditMeta;
           }
-          static audit(artifacts, context) {
-            context.LighthouseRunWarnings.push(warningString);
+          static audit() {
             return {
               numericValue: 5,
               score: 1,
+              runWarnings: [warningString],
             };
-          }
-        },
-      ],
-    });
-
-    return Runner.run(null, {config, driverMock}).then(results => {
-      assert.deepStrictEqual(results.lhr.runWarnings, [warningString]);
-    });
-  });
-
-  it('includes any LighthouseRunWarnings from errored audits in LHR', () => {
-    const warningString = 'Audit warning just before a terrible error!';
-
-    const config = new Config({
-      settings: {
-        auditMode: __dirname + '/fixtures/artifacts/empty-artifacts/',
-      },
-      audits: [
-        class WarningAudit extends Audit {
-          static get meta() {
-            return basicAuditMeta;
-          }
-          static audit(artifacts, context) {
-            context.LighthouseRunWarnings.push(warningString);
-            throw new Error('Terrible.');
           }
         },
       ],
@@ -715,10 +782,10 @@ describe('Runner', () => {
         online: true,
         // Loads the page successfully in the first pass, fails with PAGE_HUNG in the second.
         async gotoURL(url) {
-          if (url.includes('blank')) return null;
+          if (url.includes('blank')) return {finalUrl: '', timedOut: false};
           if (firstLoad) {
             firstLoad = false;
-            return url;
+            return {finalUrl: url, timedOut: false};
           } else {
             throw new LHError(LHError.errors.PAGE_HUNG);
           }

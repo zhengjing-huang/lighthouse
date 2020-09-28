@@ -1,5 +1,5 @@
 /**
- * @license Copyright 2016 Google Inc. All Rights Reserved.
+ * @license Copyright 2016 The Lighthouse Authors. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
  */
@@ -8,18 +8,20 @@
 /** @typedef {import('../gather/driver.js')} Driver */
 
 /**
- * Nexus 5X metrics adapted from emulated_devices/module.json
  * @type {LH.Crdp.Emulation.SetDeviceMetricsOverrideRequest}
  */
-const NEXUS5X_EMULATION_METRICS = {
+const MOTOG4_EMULATION_METRICS = {
   mobile: true,
-  screenWidth: 412,
-  screenHeight: 660,
-  width: 412,
-  height: 660,
+  screenWidth: 360,
+  screenHeight: 640,
+  width: 360,
+  height: 640,
   positionX: 0,
   positionY: 0,
   scale: 1,
+  // Moto G4 is really 3, but a higher value here works against
+  // our perf recommendations.
+  // https://github.com/GoogleChrome/lighthouse/issues/10741#issuecomment-626903508
   deviceScaleFactor: 2.625,
   screenOrientation: {
     angle: 0,
@@ -39,9 +41,9 @@ const DESKTOP_EMULATION_METRICS = {
 };
 
 // eslint-disable-next-line max-len
-const NEXUS5X_USERAGENT = 'Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3963.0 Mobile Safari/537.36 Chrome-Lighthouse';
+const MOTOG4_USERAGENT = 'Mozilla/5.0 (Linux; Android 7.0; Moto G (4)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4143.7 Mobile Safari/537.36 Chrome-Lighthouse';
 // eslint-disable-next-line max-len
-const DESKTOP_USERAGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3963.0 Safari/537.36 Chrome-Lighthouse';
+const DESKTOP_USERAGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4143.7 Safari/537.36 Chrome-Lighthouse';
 
 const OFFLINE_METRICS = {
   offline: true,
@@ -64,8 +66,8 @@ const NO_CPU_THROTTLE_METRICS = {
 
 const emulationParams = {
   mobile: {
-    userAgent: NEXUS5X_USERAGENT,
-    metrics: NEXUS5X_EMULATION_METRICS,
+    userAgent: MOTOG4_USERAGENT,
+    metrics: MOTOG4_EMULATION_METRICS,
     touchEnabled: true,
   },
   desktop: {
@@ -161,6 +163,6 @@ module.exports = {
   enableCPUThrottling,
   disableCPUThrottling,
   goOffline,
-  MOBILE_USERAGENT: NEXUS5X_USERAGENT,
+  MOBILE_USERAGENT: MOTOG4_USERAGENT,
   DESKTOP_USERAGENT,
 };

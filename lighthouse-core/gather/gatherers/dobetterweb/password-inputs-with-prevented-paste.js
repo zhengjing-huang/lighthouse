@@ -1,11 +1,11 @@
 /**
- * @license Copyright 2017 Google Inc. All Rights Reserved.
+ * @license Copyright 2017 The Lighthouse Authors. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
  */
 'use strict';
 
-/* global document ClipboardEvent getOuterHTMLSnippet */
+/* global document ClipboardEvent getNodeDetails */
 
 const Gatherer = require('../gatherer.js');
 const pageFunctions = require('../../../lib/page-functions.js');
@@ -22,10 +22,10 @@ function findPasswordInputsWithPreventedPaste() {
         new ClipboardEvent('paste', {cancelable: true})
       )
     )
-    .map(passwordInput => ({
-      // @ts-ignore - getOuterHTMLSnippet put into scope via stringification
-      snippet: getOuterHTMLSnippet(passwordInput),
-    }));
+    .map(passwordInput => (
+      // @ts-expect-error - getNodeDetails put into scope via stringification
+      getNodeDetails(passwordInput)
+    ));
 }
 
 class PasswordInputsWithPreventedPaste extends Gatherer {
@@ -34,10 +34,12 @@ class PasswordInputsWithPreventedPaste extends Gatherer {
    * @return {Promise<LH.Artifacts['PasswordInputsWithPreventedPaste']>}
    */
   afterPass(passContext) {
-    return passContext.driver.evaluateAsync(`(() => {
-      ${pageFunctions.getOuterHTMLSnippetString};
+    const expression = `(() => {
+      ${pageFunctions.getNodeDetailsString};
       return (${findPasswordInputsWithPreventedPaste.toString()}());
-    })()`);
+    })()`;
+
+    return passContext.driver.evaluateAsync(expression);
   }
 }
 

@@ -1,5 +1,5 @@
 /**
- * @license Copyright 2017 Google Inc. All Rights Reserved.
+ * @license Copyright 2017 The Lighthouse Authors. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
  */
@@ -18,15 +18,22 @@ const UIStrings = {
   /** Title of a Lighthouse audit that provides detail on the font sizes used on the page. This descriptive title is shown to users when there is a font that may be too small to be read by users. */
   failureTitle: 'Document doesn\'t use legible font sizes',
   /** Description of a Lighthouse audit that tells the user *why* they need to use a larger font size. This is displayed after a user expands the section to see more. No character length limits. 'Learn More' becomes link text to additional documentation. */
-  description: 'Font sizes less than 12px are too small to be legible and require mobile visitors to “pinch to zoom” in order to read. Strive to have >60% of page text ≥12px. [Learn more](https://web.dev/font-size).',
+  description: 'Font sizes less than 12px are too small to be legible and require mobile visitors to “pinch to zoom” in order to read. Strive to have >60% of page text ≥12px. [Learn more](https://web.dev/font-size/).',
   /** Label for the audit identifying font sizes that are too small. */
   displayValue: '{decimalProportion, number, extendedPercent} legible text',
   /** Explanatory message stating that there was a failure in an audit caused by a missing page viewport meta tag configuration. "viewport" and "meta" are HTML terms and should not be translated. */
   explanationViewport: 'Text is illegible because there\'s no viewport meta tag optimized ' +
     'for mobile screens.',
-  /** Explanatory message stating that there was a failure in an audit caused by a certain percentage of the text on the page being too small, based on a sample size of text that was less than 100% of the text on the page. "decimalProportion" will be replaced by a percentage between 0 and 100%. */
-  explanationWithDisclaimer: '{decimalProportion, number, extendedPercent} of text is too ' +
-    'small (based on {decimalProportionVisited, number, extendedPercent} sample).',
+  /** Label for the table row which summarizes all failing nodes that were not fully analyzed. "Add'l" is shorthand for "Additional" */
+  additionalIllegibleText: 'Add\'l illegible text',
+  /** Label for the table row which displays the percentage of nodes that have proper font size. */
+  legibleText: 'Legible text',
+  /** Label for a column in a data table; entries will be css style rule selectors. */
+  columnSelector: 'Selector',
+  /** Label for a column in a data table; entries will be the percent of page text a specific CSS rule applies to. */
+  columnPercentPageText: '% of Page Text',
+  /** Label for a column in a data table; entries will be text font sizes. */
+  columnFontSize: 'Font Size',
 };
 
 const str_ = i18n.createMessageInstanceIdFn(__filename, UIStrings);
@@ -39,13 +46,15 @@ function getUniqueFailingRules(fontSizeArtifact) {
   /** @type {Map<string, FailingNodeData>} */
   const failingRules = new Map();
 
-  fontSizeArtifact.forEach(({cssRule, fontSize, textLength, node}) => {
-    const artifactId = getFontArtifactId(cssRule, node);
+  fontSizeArtifact.forEach((failingNodeData) => {
+    const {nodeId, cssRule, fontSize, textLength, parentNode} = failingNodeData;
+    const artifactId = getFontArtifactId(cssRule, nodeId);
     const failingRule = failingRules.get(artifactId);
 
     if (!failingRule) {
       failingRules.set(artifactId, {
-        node,
+        nodeId,
+        parentNode,
         cssRule,
         fontSize,
         textLength,
@@ -79,11 +88,11 @@ function getAttributeMap(attributes = []) {
 
 /**
  * TODO: return unique selector, like axe-core does, instead of just id/class/name of a single node
- * @param {FailingNodeData['node']} node
+ * @param {FailingNodeData['parentNode']} parentNode
  * @returns {string}
  */
-function getSelector(node) {
-  const attributeMap = getAttributeMap(node.attributes);
+function getSelector(parentNode) {
+  const attributeMap = getAttributeMap(parentNode.attributes);
 
   if (attributeMap.has('id')) {
     return '#' + attributeMap.get('id');
@@ -94,40 +103,40 @@ function getSelector(node) {
     }
   }
 
-  return node.localName.toLowerCase();
+  return parentNode.nodeName.toLowerCase();
 }
 
 /**
- * @param {FailingNodeData['node']} node
- * @return {{type: 'node', selector: string, snippet: string}}
+ * @param {FailingNodeData['parentNode']} parentNode
+ * @return {LH.Audit.Details.NodeValue}
  */
-function nodeToTableNode(node) {
-  const attributes = node.attributes || [];
+function nodeToTableNode(parentNode) {
+  const attributes = parentNode.attributes || [];
   const attributesString = attributes.map((value, idx) =>
     (idx % 2 === 0) ? ` ${value}` : `="${value}"`
   ).join('');
 
   return {
     type: 'node',
-    selector: node.parentNode ? getSelector(node.parentNode) : '',
-    snippet: `<${node.localName}${attributesString}>`,
+    selector: parentNode.parentNode ? getSelector(parentNode.parentNode) : '',
+    snippet: `<${parentNode.nodeName.toLowerCase()}${attributesString}>`,
   };
 }
 
 /**
  * @param {string} baseURL
  * @param {FailingNodeData['cssRule']} styleDeclaration
- * @param {FailingNodeData['node']} node
+ * @param {FailingNodeData['parentNode']} parentNode
  * @returns {{source: LH.Audit.Details.UrlValue | LH.Audit.Details.SourceLocationValue | LH.Audit.Details.CodeValue, selector: string | LH.Audit.Details.NodeValue}}
  */
-function findStyleRuleSource(baseURL, styleDeclaration, node) {
+function findStyleRuleSource(baseURL, styleDeclaration, parentNode) {
   if (!styleDeclaration ||
     styleDeclaration.type === 'Attributes' ||
     styleDeclaration.type === 'Inline'
   ) {
     return {
       source: {type: 'url', value: baseURL},
-      selector: nodeToTableNode(node),
+      selector: nodeToTableNode(parentNode),
     };
   }
 
@@ -201,16 +210,16 @@ function findStyleRuleSource(baseURL, styleDeclaration, node) {
 
 /**
  * @param {FailingNodeData['cssRule']} styleDeclaration
- * @param {FailingNodeData['node']} node
+ * @param {number} textNodeId
  * @return {string}
  */
-function getFontArtifactId(styleDeclaration, node) {
+function getFontArtifactId(styleDeclaration, textNodeId) {
   if (styleDeclaration && styleDeclaration.type === 'Regular') {
     const startLine = styleDeclaration.range ? styleDeclaration.range.startLine : 0;
     const startColumn = styleDeclaration.range ? styleDeclaration.range.startColumn : 0;
     return `${styleDeclaration.styleSheetId}@${startLine}:${startColumn}`;
   } else {
-    return `node_${node.nodeId}`;
+    return `node_${textNodeId}`;
   }
 }
 
@@ -254,7 +263,6 @@ class FontSize extends Audit {
       analyzedFailingNodesData,
       analyzedFailingTextLength,
       failingTextLength,
-      visitedTextLength,
       totalTextLength,
     } = artifacts.FontSize;
 
@@ -266,21 +274,21 @@ class FontSize extends Audit {
 
     const failingRules = getUniqueFailingRules(analyzedFailingNodesData);
     const percentageOfPassingText =
-      (visitedTextLength - failingTextLength) / visitedTextLength * 100;
+      (totalTextLength - failingTextLength) / totalTextLength * 100;
     const pageUrl = artifacts.URL.finalUrl;
 
     /** @type {LH.Audit.Details.Table['headings']} */
     const headings = [
-      {key: 'source', itemType: 'source-location', text: 'Source'},
-      {key: 'selector', itemType: 'code', text: 'Selector'},
-      {key: 'coverage', itemType: 'text', text: '% of Page Text'},
-      {key: 'fontSize', itemType: 'text', text: 'Font Size'},
+      {key: 'source', itemType: 'source-location', text: str_(i18n.UIStrings.columnSource)},
+      {key: 'selector', itemType: 'code', text: str_(UIStrings.columnSelector)},
+      {key: 'coverage', itemType: 'text', text: str_(UIStrings.columnPercentPageText)},
+      {key: 'fontSize', itemType: 'text', text: str_(UIStrings.columnFontSize)},
     ];
 
     const tableData = failingRules.sort((a, b) => b.textLength - a.textLength)
-      .map(({cssRule, textLength, fontSize, node}) => {
-        const percentageOfAffectedText = textLength / visitedTextLength * 100;
-        const origin = findStyleRuleSource(pageUrl, cssRule, node);
+      .map(({cssRule, textLength, fontSize, parentNode}) => {
+        const percentageOfAffectedText = textLength / totalTextLength * 100;
+        const origin = findStyleRuleSource(pageUrl, cssRule, parentNode);
 
         return {
           source: origin.source,
@@ -293,11 +301,11 @@ class FontSize extends Audit {
     // all failing nodes that were not fully analyzed will be displayed in a single row
     if (analyzedFailingTextLength < failingTextLength) {
       const percentageOfUnanalyzedFailingText =
-        (failingTextLength - analyzedFailingTextLength) / visitedTextLength * 100;
+        (failingTextLength - analyzedFailingTextLength) / totalTextLength * 100;
 
       tableData.push({
         // Overrides default `source-location`
-        source: {type: 'code', value: 'Add\'l illegible text'},
+        source: {type: 'code', value: str_(UIStrings.additionalIllegibleText)},
         selector: '',
         coverage: `${percentageOfUnanalyzedFailingText.toFixed(2)}%`,
         fontSize: '< 12px',
@@ -307,7 +315,7 @@ class FontSize extends Audit {
     if (percentageOfPassingText > 0) {
       tableData.push({
         // Overrides default `source-location`
-        source: {type: 'code', value: 'Legible text'},
+        source: {type: 'code', value: str_(UIStrings.legibleText)},
         selector: '',
         coverage: `${percentageOfPassingText.toFixed(2)}%`,
         fontSize: '≥ 12px',
@@ -319,26 +327,10 @@ class FontSize extends Audit {
     const details = Audit.makeTableDetails(headings, tableData);
     const passed = percentageOfPassingText >= MINIMAL_PERCENTAGE_OF_LEGIBLE_TEXT;
 
-    let explanation;
-    if (!passed) {
-      const percentageOfFailingText = (100 - percentageOfPassingText) / 100;
-
-      // if we were unable to visit all text nodes we should disclose that information
-      if (visitedTextLength < totalTextLength) {
-        const percentageOfVisitedText = (visitedTextLength / totalTextLength);
-        explanation = str_(UIStrings.explanationWithDisclaimer,
-          {
-            decimalProportion: percentageOfFailingText,
-            decimalProportionVisited: percentageOfVisitedText,
-          });
-      }
-    }
-
     return {
       score: Number(passed),
       details,
       displayValue,
-      explanation,
     };
   }
 }

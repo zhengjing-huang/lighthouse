@@ -1,12 +1,12 @@
 /**
- * @license Copyright 2016 Google Inc. All Rights Reserved.
+ * @license Copyright 2016 The Lighthouse Authors. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
  */
 'use strict';
 
 const Config = require('../../config/config.js');
-const assert = require('assert');
+const assert = require('assert').strict;
 const path = require('path');
 const defaultConfig = require('../../config/default-config.js');
 const log = require('lighthouse-logger');
@@ -86,7 +86,7 @@ describe('Config', () => {
   it('uses the default config when no config is provided', () => {
     const config = new Config();
     assert.deepStrictEqual(config.categories, origConfig.categories);
-    assert.equal(config.audits.length, origConfig.audits.length);
+    assert.deepStrictEqual(config.audits.map(a => a.path), origConfig.audits);
   });
 
   it('throws when a passName is used twice', () => {
@@ -147,6 +147,131 @@ describe('Config', () => {
     })).toThrow('VRMLElements gatherer, required by audit missing-artifact-audit, was not found in config');
   });
 
+  // eslint-disable-next-line max-len
+  it('does not throw when an audit requests an optional artifact with no gatherer supplying it', async () => {
+    class DoesntNeedYourCrap extends Audit {
+      static get meta() {
+        return {
+          id: 'optional-artifact-audit',
+          title: 'none',
+          description: 'none',
+          requiredArtifacts: [
+            'URL', // base artifact
+            'ViewportDimensions', // from gatherer
+          ],
+          __internalOptionalArtifacts: [
+            'NotInTheConfig',
+          ],
+        };
+      }
+
+      static audit() {}
+    }
+
+    // Shouldn't throw.
+    const config = new Config({
+      extends: 'lighthouse:default',
+      audits: [DoesntNeedYourCrap],
+    }, {
+      // Trigger filtering logic.
+      onlyAudits: ['optional-artifact-audit'],
+    });
+    expect(config.passes[0].gatherers.map(g => g.path)).toEqual(['viewport-dimensions']);
+  });
+
+  it('should keep optional artifacts in gatherers after filter', async () => {
+    class ButWillStillTakeYourCrap extends Audit {
+      static get meta() {
+        return {
+          id: 'optional-artifact-audit',
+          title: 'none',
+          description: 'none',
+          requiredArtifacts: [
+            'URL', // base artifact
+            'ViewportDimensions', // from gatherer
+          ],
+          __internalOptionalArtifacts: [
+            'SourceMaps', // Is in the config.
+          ],
+        };
+      }
+
+      static audit() {}
+    }
+
+    const config = new Config({
+      extends: 'lighthouse:default',
+      audits: [ButWillStillTakeYourCrap],
+    }, {
+      // Trigger filtering logic.
+      onlyAudits: ['optional-artifact-audit'],
+    });
+    expect(config.passes[0].gatherers.map(g => g.path))
+      .toEqual(['viewport-dimensions', 'source-maps']);
+  });
+
+  it('should keep optional artifacts in gatherers after filter', async () => {
+    class ButWillStillTakeYourCrap extends Audit {
+      static get meta() {
+        return {
+          id: 'optional-artifact-audit',
+          title: 'none',
+          description: 'none',
+          requiredArtifacts: [
+            'URL', // base artifact
+            'ViewportDimensions', // from gatherer
+          ],
+          __internalOptionalArtifacts: [
+            'SourceMaps', // Is in the config.
+          ],
+        };
+      }
+
+      static audit() {}
+    }
+
+    const config = new Config({
+      extends: 'lighthouse:default',
+      audits: [ButWillStillTakeYourCrap],
+    }, {
+      // Trigger filtering logic.
+      onlyAudits: ['optional-artifact-audit'],
+    });
+    expect(config.passes[0].gatherers.map(g => g.path))
+      .toEqual(['viewport-dimensions', 'source-maps']);
+  });
+
+  it('should keep optional artifacts in gatherers after filter', async () => {
+    class ButWillStillTakeYourCrap extends Audit {
+      static get meta() {
+        return {
+          id: 'optional-artifact-audit',
+          title: 'none',
+          description: 'none',
+          requiredArtifacts: [
+            'URL', // base artifact
+            'ViewportDimensions', // from gatherer
+          ],
+          __internalOptionalArtifacts: [
+            'SourceMaps', // Is in the config.
+          ],
+        };
+      }
+
+      static audit() {}
+    }
+
+    const config = new Config({
+      extends: 'lighthouse:default',
+      audits: [ButWillStillTakeYourCrap],
+    }, {
+      // Trigger filtering logic.
+      onlyAudits: ['optional-artifact-audit'],
+    });
+    expect(config.passes[0].gatherers.map(g => g.path))
+      .toEqual(['viewport-dimensions', 'source-maps']);
+  });
+
   it('does not throw when an audit requires only base artifacts', () => {
     class BaseArtifactsAudit extends Audit {
       static get meta() {
@@ -190,13 +315,14 @@ describe('Config', () => {
         gatherers: [
           'viewport-dimensions',
           'meta-elements',
+          'inspector-issues',
         ],
       }],
       audits: ['is-on-https'],
     };
 
     const _ = new Config(configJSON);
-    assert.equal(configJSON.passes[0].gatherers.length, 2);
+    assert.equal(configJSON.passes[0].gatherers.length, 3);
   });
 
   it('expands audits', () => {
@@ -623,6 +749,7 @@ describe('Config', () => {
 
     assert.equal(config.settings.throttlingMethod, 'devtools');
     assert.equal(config.passes[0].passName, 'defaultPass');
+    assert.ok(config.passes[0].pauseAfterFcpMs >= 5000, 'did not adjust fcp quiet ms');
     assert.ok(config.passes[0].pauseAfterLoadMs >= 5000, 'did not adjust load quiet ms');
     assert.ok(config.passes[0].cpuQuietThresholdMs >= 5000, 'did not adjust cpu quiet ms');
     assert.ok(config.passes[0].networkQuietThresholdMs >= 5000, 'did not adjust network quiet ms');
@@ -916,17 +1043,6 @@ describe('Config', () => {
     });
   });
 
-  describe('getCategories', () => {
-    it('returns the IDs & names of the categories', () => {
-      const categories = Config.getCategories(origConfig);
-      assert.equal(Array.isArray(categories), true);
-      assert.equal(categories.length, 5, 'Found the correct number of categories');
-      const haveName = categories.every(cat => cat.title.length);
-      const haveID = categories.every(cat => cat.id.length);
-      assert.equal(haveName === haveID === true, true, 'they have IDs and titles');
-    });
-  });
-
   describe('filterConfigIfNeeded', () => {
     it('should not mutate the original config', () => {
       const configCopy = JSON.parse(JSON.stringify(origConfig));
@@ -950,8 +1066,21 @@ describe('Config', () => {
       };
       const extendedConfig = new Config(extended);
 
+      // When gatherers have instance properties that are bind()'d, they'll not match.
+      // Gatherers in each config will still be compared via the constructor on .implementation.
+      // https://github.com/GoogleChrome/lighthouse/pull/10090#discussion_r382864319
+      function deleteInstancesForTest(config) {
+        for (const pass of config.passes) {
+          for (const gatherer of pass.gatherers) {
+            delete gatherer.instance;
+          }
+        }
+      }
+      deleteInstancesForTest(extendedConfig);
+      deleteInstancesForTest(config);
+
       assert.equal(config.passes.length, 1, 'did not filter config');
-      assert.deepStrictEqual(config, extendedConfig, 'had mutations');
+      expect(config).toEqual(extendedConfig); // ensure we didn't have mutations
     });
 
     it('should filter out other passes if passed Performance', () => {

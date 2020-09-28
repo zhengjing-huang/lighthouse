@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2017 The Lighthouse Authors. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,13 +23,15 @@
  * the report.
  */
 
-/* globals getFilenamePrefix Util */
+/* globals getFilenamePrefix Util ElementScreenshotRenderer */
+
+/** @typedef {import('./dom')} DOM */
 
 /** @typedef {import('../../../lib/i18n/locales').LhlMessages} LhlMessages */
 
 /**
  * @param {HTMLTableElement} tableEl
- * @return {Array<HTMLTableRowElement>}
+ * @return {Array<HTMLElement>}
  */
 function getTableRows(tableEl) {
   return Array.from(tableEl.tBodies[0].rows);
@@ -82,6 +84,7 @@ class ReportUIFeatures {
     this._setupMediaQueryListeners();
     this._dropDown.setup(this.onDropDownMenuClick);
     this._setupThirdPartyFilter();
+    this._setupElementScreenshotOverlay();
     this._setUpCollapseDetailsAfterPrinting();
     this._resetUIState();
     this._document.addEventListener('keyup', this.onKeyUp);
@@ -97,11 +100,14 @@ class ReportUIFeatures {
       turnOffTheLights = true;
     }
 
-    // Fireworks.
-    const scoresAll100 = Object.values(report.categories).every(cat => cat.score === 1);
-    const hasAllCoreCategories =
-      Object.keys(report.categories).filter(id => !Util.isPluginCategory(id)).length >= 5;
-    if (scoresAll100 && hasAllCoreCategories) {
+    // Fireworks!
+    // To get fireworks you need 100 scores in all core categories, except PWA (because going the PWA route is discretionary).
+    const fireworksRequiredCategoryIds = ['performance', 'accessibility', 'best-practices', 'seo'];
+    const scoresAll100 = fireworksRequiredCategoryIds.every(id => {
+      const cat = report.categories[id];
+      return cat && cat.score === 1;
+    });
+    if (scoresAll100) {
       turnOffTheLights = true;
       this._enableFireworks();
     }
@@ -137,6 +143,14 @@ class ReportUIFeatures {
       const toggleInputEl = /** @type {HTMLInputElement} */ (
         this._dom.find('.lh-metrics-toggle__input', this._document));
       toggleInputEl.checked = true;
+    }
+
+    // Fill in all i18n data.
+    for (const node of this._dom.findAll('[data-i18n]', this._dom.document())) {
+      // These strings are guaranteed to (at least) have a default English string in Util.UIStrings,
+      // so this cannot be undefined as long as `report-ui-features.data-i18n` test passes.
+      const i18nAttr = /** @type {keyof LH.I18NRendererStrings} */ (node.getAttribute('data-i18n'));
+      node.textContent = Util.i18n.strings[i18nAttr];
     }
   }
 
@@ -222,6 +236,11 @@ class ReportUIFeatures {
       // This audit deals explicitly with third party resources.
       'uses-rel-preconnect',
     ];
+    // Some audits should hide third party by default.
+    const thirdPartyFilterAuditHideByDefault = [
+      // Only first party resources are actionable.
+      'legacy-javascript',
+    ];
 
     // Get all tables with a text url column.
     /** @type {Array<HTMLTableElement>} */
@@ -236,8 +255,8 @@ class ReportUIFeatures {
       });
 
     tablesWithUrls.forEach((tableEl, index) => {
-      const urlItems = this._getUrlItems(tableEl);
-      const thirdPartyRows = this._getThirdPartyRows(tableEl, urlItems, this.json.finalUrl);
+      const rowEls = getTableRows(tableEl);
+      const thirdPartyRows = this._getThirdPartyRows(rowEls, this.json.finalUrl);
 
       // create input box
       const filterTemplate = this._dom.cloneTemplate('#tmpl-lh-3p-filter', this._templateContext);
@@ -247,63 +266,88 @@ class ReportUIFeatures {
 
       filterInput.id = id;
       filterInput.addEventListener('change', e => {
-        // Remove rows from the dom and keep track of them to re-add on uncheck.
-        // Why removing instead of hiding? To keep nth-child(even) background-colors working.
-        if (e.target instanceof HTMLInputElement && !e.target.checked) {
-          for (const row of thirdPartyRows.values()) {
-            row.remove();
-          }
-        } else {
-          // Add row elements back to original positions.
-          for (const [position, row] of thirdPartyRows.entries()) {
-            const childrenArr = getTableRows(tableEl);
-            tableEl.tBodies[0].insertBefore(row, childrenArr[position]);
-          }
+        const shouldHideThirdParty = e.target instanceof HTMLInputElement && !e.target.checked;
+        let even = true;
+        let rowEl = rowEls[0];
+        while (rowEl) {
+          const shouldHide = shouldHideThirdParty && thirdPartyRows.includes(rowEl);
+
+          // Iterate subsequent associated sub item rows.
+          do {
+            rowEl.classList.toggle('lh-row--hidden', shouldHide);
+            // Adjust for zebra styling.
+            rowEl.classList.toggle('lh-row--even', !shouldHide && even);
+            rowEl.classList.toggle('lh-row--odd', !shouldHide && !even);
+
+            rowEl = /** @type {HTMLElement} */ (rowEl.nextElementSibling);
+          } while (rowEl && rowEl.classList.contains('lh-sub-item-row'));
+
+          if (!shouldHide) even = !even;
         }
       });
 
       this._dom.find('label', filterTemplate).setAttribute('for', id);
       this._dom.find('.lh-3p-filter-count', filterTemplate).textContent =
-          `${thirdPartyRows.size}`;
+          `${thirdPartyRows.length}`;
       this._dom.find('.lh-3p-ui-string', filterTemplate).textContent =
           Util.i18n.strings.thirdPartyResourcesLabel;
 
+      const allThirdParty = thirdPartyRows.length === rowEls.length;
+      const allFirstParty = !thirdPartyRows.length;
+
       // If all or none of the rows are 3rd party, disable the checkbox.
-      if (thirdPartyRows.size === urlItems.length || !thirdPartyRows.size) {
+      if (allThirdParty || allFirstParty) {
         filterInput.disabled = true;
-        filterInput.checked = thirdPartyRows.size === urlItems.length;
+        filterInput.checked = allThirdParty;
       }
 
-      // Finally, add checkbox to the DOM.
+      // Add checkbox to the DOM.
       if (!tableEl.parentNode) return; // Keep tsc happy.
       tableEl.parentNode.insertBefore(filterTemplate, tableEl);
+
+      // Hide third-party rows for some audits by default.
+      const containingAudit = tableEl.closest('.lh-audit');
+      if (!containingAudit) throw new Error('.lh-table not within audit');
+      if (thirdPartyFilterAuditHideByDefault.includes(containingAudit.id) && !allThirdParty) {
+        filterInput.click();
+      }
     });
+  }
+
+  _setupElementScreenshotOverlay() {
+    const fullPageScreenshot =
+      this.json.audits['full-page-screenshot'] && this.json.audits['full-page-screenshot'].details;
+    if (!fullPageScreenshot || fullPageScreenshot.type !== 'full-page-screenshot') return;
+
+    ElementScreenshotRenderer.installOverlayFeature(
+      this._dom, this._templateContext, fullPageScreenshot);
   }
 
   /**
    * From a table with URL entries, finds the rows containing third-party URLs
-   * and returns a Map of those rows, mapping from row index to row Element.
-   * @param {HTMLTableElement} el
+   * and returns them.
+   * @param {HTMLElement[]} rowEls
    * @param {string} finalUrl
-   * @param {Array<HTMLElement>} urlItems
-   * @return {Map<number, HTMLTableRowElement>}
+   * @return {Array<HTMLElement>}
    */
-  _getThirdPartyRows(el, urlItems, finalUrl) {
+  _getThirdPartyRows(rowEls, finalUrl) {
+    /** @type {Array<HTMLElement>} */
+    const thirdPartyRows = [];
     const finalUrlRootDomain = Util.getRootDomain(finalUrl);
 
-    /** @type {Map<number, HTMLTableRowElement>} */
-    const thirdPartyRows = new Map();
-    for (const urlItem of urlItems) {
+    for (const rowEl of rowEls) {
+      if (rowEl.classList.contains('lh-sub-item-row')) continue;
+
+      /** @type {HTMLElement|null} */
+      const urlItem = rowEl.querySelector('.lh-text__url');
+      if (!urlItem) continue;
+
       const datasetUrl = urlItem.dataset.url;
       if (!datasetUrl) continue;
       const isThirdParty = Util.getRootDomain(datasetUrl) !== finalUrlRootDomain;
       if (!isThirdParty) continue;
 
-      const urlRowEl = urlItem.closest('tr');
-      if (urlRowEl) {
-        const rowPosition = getTableRows(el).indexOf(urlRowEl);
-        thirdPartyRows.set(rowPosition, urlRowEl);
-      }
+      thirdPartyRows.push(rowEl);
     }
 
     return thirdPartyRows;
@@ -526,7 +570,7 @@ class ReportUIFeatures {
     });
 
     // The popup's window.name is keyed by version+url+fetchTime, so we reuse/select tabs correctly
-    // @ts-ignore - If this is a v2 LHR, use old `generatedTime`.
+    // @ts-expect-error - If this is a v2 LHR, use old `generatedTime`.
     const fallbackFetchTime = /** @type {string} */ (json.generatedTime);
     const fetchTime = json.fetchTime || fallbackFetchTime;
     const windowName = `${json.lighthouseVersion}-${json.requestedUrl}-${fetchTime}`;
@@ -676,6 +720,7 @@ class DropDown {
     this.onDocumentKeyDown = this.onDocumentKeyDown.bind(this);
     this.onToggleClick = this.onToggleClick.bind(this);
     this.onToggleKeydown = this.onToggleKeydown.bind(this);
+    this.onMenuFocusOut = this.onMenuFocusOut.bind(this);
     this.onMenuKeydown = this.onMenuKeydown.bind(this);
 
     this._getNextMenuItem = this._getNextMenuItem.bind(this);
@@ -703,6 +748,7 @@ class DropDown {
       // Refocus on the tools button if the drop down last had focus
       this._toggleEl.focus();
     }
+    this._menuEl.removeEventListener('focusout', this.onMenuFocusOut);
     this._dom.document().removeEventListener('keydown', this.onDocumentKeyDown);
   }
 
@@ -722,6 +768,7 @@ class DropDown {
 
     this._toggleEl.classList.add('active');
     this._toggleEl.setAttribute('aria-expanded', 'true');
+    this._menuEl.addEventListener('focusout', this.onMenuFocusOut);
     this._dom.document().addEventListener('keydown', this.onDocumentKeyDown);
   }
 
@@ -796,6 +843,18 @@ class DropDown {
    */
   onDocumentKeyDown(e) {
     if (e.keyCode === 27) { // ESC
+      this.close();
+    }
+  }
+
+  /**
+   * Focus out handler for the drop down menu.
+   * @param {FocusEvent} e
+   */
+  onMenuFocusOut(e) {
+    const focusedEl = /** @type {?HTMLElement} */ (e.relatedTarget);
+
+    if (!this._menuEl.contains(focusedEl)) {
       this.close();
     }
   }

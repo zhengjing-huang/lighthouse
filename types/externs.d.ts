@@ -1,5 +1,5 @@
 /**
- * @license Copyright 2017 Google Inc. All Rights Reserved.
+ * @license Copyright 2017 The Lighthouse Authors. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
  */
@@ -27,10 +27,29 @@ declare global {
   };
 
   /** Make optional all properties on T and any properties on object properties of T. */
-  type RecursivePartial<T> = {
-    [P in keyof T]+?: T[P] extends object ?
-      RecursivePartial<T[P]> :
-      T[P];
+  type RecursivePartial<T> =
+    // Recurse into arrays and tuples: elements aren't (newly) optional, but any properties they have are.
+    T extends (infer U)[] ? RecursivePartial<U>[] :
+    // Recurse into objects: properties and any of their properties are optional.
+    T extends object ? {[P in keyof T]?: RecursivePartial<T[P]>} :
+    // Strings, numbers, etc. (terminal types) end here.
+    T;
+
+  /** Recursively makes all properties of T read-only. */
+  export type Immutable<T> =
+    T extends Function ? T :
+    T extends Array<infer R> ? ImmutableArray<R> :
+    T extends Map<infer K, infer V> ? ImmutableMap<K, V> :
+    T extends Set<infer M> ? ImmutableSet<M> :
+    T extends object ? ImmutableObject<T> :
+    T
+
+  // Intermediate immutable types. Prefer e.g. Immutable<Set<T>> over direct use.
+  type ImmutableArray<T> = ReadonlyArray<Immutable<T>>;
+  type ImmutableMap<K, V> = ReadonlyMap<Immutable<K>, Immutable<V>>;
+  type ImmutableSet<T> = ReadonlySet<Immutable<T>>;
+  type ImmutableObject<T> = {
+    readonly [K in keyof T]: Immutable<T[K]>;
   };
 
   /**
@@ -149,7 +168,7 @@ declare global {
     export interface CliFlags extends Flags {
       _: string[];
       chromeIgnoreDefaultFlags: boolean;
-      chromeFlags: string;
+      chromeFlags: string | string[];
       /** Output path for the generated results. */
       outputPath: string;
       /** Flag to save the trace contents and screenshots to disk. */
@@ -163,7 +182,7 @@ declare global {
       /** Flag to print a list of all required trace categories. */
       listTraceCategories: boolean;
       /** A preset audit of selected audit categories to run. */
-      preset?: 'full'|'mixed-content'|'perf';
+      preset?: 'experimental'|'perf';
       /** A flag to enable logLevel 'verbose'. */
       verbose: boolean;
       /** A flag to enable logLevel 'silent'. */
@@ -214,6 +233,13 @@ declare global {
       [futureProps: string]: any;
     }
 
+    /** The type of the Profile & ProfileChunk event in Chromium traces. Note that this is subtly different from Crdp.Profiler.Profile. */
+    export interface TraceCpuProfile {
+      nodes?: Array<{id: number, callFrame: {functionName: string, url?: string}, parent?: number}>
+      samples?: Array<number>
+      timeDeltas?: Array<number>
+    }
+
     /**
      * @see https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/preview
      */
@@ -223,6 +249,11 @@ declare global {
       args: {
         fileName?: string;
         snapshot?: string;
+        beginData?: {
+          frame?: string;
+          startLine?: number;
+          url?: string;
+        };
         data?: {
           frame?: string;
           isLoadingMainFrame?: boolean;
@@ -235,12 +266,29 @@ declare global {
           page?: string;
           readyState?: number;
           requestId?: string;
+          startTime?: number;
+          timeDeltas?: TraceCpuProfile['timeDeltas'];
+          cpuProfile?: TraceCpuProfile;
+          callFrame?: Required<TraceCpuProfile>['nodes'][0]['callFrame']
           stackTrace?: {
             url: string
           }[];
           styleSheetUrl?: string;
           timerId?: string;
           url?: string;
+          is_main_frame?: boolean;
+          cumulative_score?: number;
+          id?: string;
+          nodeId?: number;
+          impacted_nodes?: Array<{
+            node_id: number,
+            old_rect?: Array<number>,
+            new_rect?: Array<number>,
+          }>;
+          score?: number,
+          had_recent_input?: boolean;
+          compositeFailed?: number;
+          unsupportedProperties?: string[];
         };
         frame?: string;
         name?: string;
@@ -248,11 +296,15 @@ declare global {
       };
       pid: number;
       tid: number;
+      /** Timestamp of the event in microseconds. */
       ts: number;
       dur: number;
       ph: 'B'|'b'|'D'|'E'|'e'|'F'|'I'|'M'|'N'|'n'|'O'|'R'|'S'|'T'|'X';
       s?: 't';
       id?: string;
+      id2?: {
+        local?: string;
+      };
     }
 
     export interface DevToolsJsonTarget {

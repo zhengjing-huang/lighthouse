@@ -1,5 +1,5 @@
 /**
- * @license Copyright 2016 Google Inc. All Rights Reserved.
+ * @license Copyright 2016 The Lighthouse Authors. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
  */
@@ -38,7 +38,7 @@ class Runner {
 
       /**
        * List of top-level warnings for this Lighthouse run.
-       * @type {Array<string>}
+       * @type {Array<string | LH.IcuMessage>}
        */
       const lighthouseRunWarnings = [];
 
@@ -93,7 +93,7 @@ class Runner {
       if (!runOpts.config.audits) {
         throw new Error('No audits to evaluate.');
       }
-      const auditResults = await Runner._runAudits(settings, runOpts.config.audits, artifacts,
+      const auditResultsById = await Runner._runAudits(settings, runOpts.config.audits, artifacts,
           lighthouseRunWarnings);
 
       // LHR construction phase
@@ -107,28 +107,30 @@ class Runner {
       // Entering: conclusion of the lighthouse result object
       const lighthouseVersion = require('../package.json').version;
 
-      /** @type {Object<string, LH.Audit.Result>} */
-      const resultsById = {};
-      for (const audit of auditResults) {
-        resultsById[audit.id] = audit;
-      }
+      // Use version from gathering stage.
+      // If accessibility gatherer didn't run or errored, it won't be in credits.
+      const axeVersion = artifacts.Accessibility && artifacts.Accessibility.version;
+      const credits = {
+        'axe-core': axeVersion,
+      };
 
-      /** @type {Object<string, LH.Result.Category>} */
+      /** @type {Record<string, LH.RawIcu<LH.Result.Category>>} */
       let categories = {};
       if (runOpts.config.categories) {
-        categories = ReportScoring.scoreAllCategories(runOpts.config.categories, resultsById);
+        categories = ReportScoring.scoreAllCategories(runOpts.config.categories, auditResultsById);
       }
 
       log.timeEnd(resultsStatus);
       log.timeEnd(runnerStatus);
 
-      /** @type {LH.Result} */
-      const lhr = {
+      /** @type {LH.RawIcu<LH.Result>} */
+      const i18nLhr = {
         userAgent: artifacts.HostUserAgent,
         environment: {
           networkUserAgent: artifacts.NetworkUserAgent,
           hostUserAgent: artifacts.HostUserAgent,
           benchmarkIndex: artifacts.BenchmarkIndex,
+          credits,
         },
         lighthouseVersion,
         fetchTime: artifacts.fetchTime,
@@ -136,7 +138,7 @@ class Runner {
         finalUrl: artifacts.URL.finalUrl,
         runWarnings: lighthouseRunWarnings,
         runtimeError: Runner.getArtifactRuntimeError(artifacts),
-        audits: resultsById,
+        audits: auditResultsById,
         configSettings: settings,
         categories,
         categoryGroups: runOpts.config.groups || undefined,
@@ -149,15 +151,20 @@ class Runner {
       };
 
       // Replace ICU message references with localized strings; save replaced paths in lhr.
-      lhr.i18n.icuMessagePaths = i18n.replaceIcuMessageInstanceIds(lhr, settings.locale);
+      i18nLhr.i18n.icuMessagePaths = i18n.replaceIcuMessages(i18nLhr, settings.locale);
+
+      // LHR has now been localized.
+      const lhr = /** @type {LH.Result} */ (i18nLhr);
 
       // Create the HTML, JSON, and/or CSV string
       const report = generateReport(lhr, settings.output);
 
       return {lhr, artifacts, report};
     } catch (err) {
-      // i18n error strings
-      err.friendlyMessage = i18n.getFormatted(err.friendlyMessage, settings.locale);
+      // i18n LighthouseError strings.
+      if (err.friendlyMessage) {
+        err.friendlyMessage = i18n.getFormatted(err.friendlyMessage, settings.locale);
+      }
       await Sentry.captureException(err, {level: 'fatal'});
       throw err;
     }
@@ -221,8 +228,8 @@ class Runner {
    * @param {LH.Config.Settings} settings
    * @param {Array<LH.Config.AuditDefn>} audits
    * @param {LH.Artifacts} artifacts
-   * @param {Array<string>} runWarnings
-   * @return {Promise<Array<LH.Audit.Result>>}
+   * @param {Array<string | LH.IcuMessage>} runWarnings
+   * @return {Promise<Record<string, LH.RawIcu<LH.Audit.Result>>>}
    */
   static async _runAudits(settings, audits, artifacts, runWarnings) {
     const status = {msg: 'Analyzing and running audits...', id: 'lh:runner:auditing'};
@@ -248,19 +255,21 @@ class Runner {
     // Members of LH.Audit.Context that are shared across all audits.
     const sharedAuditContext = {
       settings,
-      LighthouseRunWarnings: runWarnings,
       computedCache: new Map(),
     };
 
     // Run each audit sequentially
-    const auditResults = [];
+    /** @type {Record<string, LH.RawIcu<LH.Audit.Result>>} */
+    const auditResultsById = {};
     for (const auditDefn of audits) {
-      const auditResult = await Runner._runAudit(auditDefn, artifacts, sharedAuditContext);
-      auditResults.push(auditResult);
+      const auditId = auditDefn.implementation.meta.id;
+      const auditResult = await Runner._runAudit(auditDefn, artifacts, sharedAuditContext,
+          runWarnings);
+      auditResultsById[auditId] = auditResult;
     }
 
     log.timeEnd(status);
-    return auditResults;
+    return auditResultsById;
   }
 
   /**
@@ -268,11 +277,12 @@ class Runner {
    * Otherwise returns error audit result.
    * @param {LH.Config.AuditDefn} auditDefn
    * @param {LH.Artifacts} artifacts
-   * @param {Pick<LH.Audit.Context, 'settings'|'LighthouseRunWarnings'|'computedCache'>} sharedAuditContext
-   * @return {Promise<LH.Audit.Result>}
+   * @param {Pick<LH.Audit.Context, 'settings'|'computedCache'>} sharedAuditContext
+   * @param {Array<string | LH.IcuMessage>} runWarnings
+   * @return {Promise<LH.RawIcu<LH.Audit.Result>>}
    * @private
    */
-  static async _runAudit(auditDefn, artifacts, sharedAuditContext) {
+  static async _runAudit(auditDefn, artifacts, sharedAuditContext, runWarnings) {
     const audit = auditDefn.implementation;
     const status = {
       msg: `Auditing: ${i18n.getFormatted(audit.meta.title, 'en-US')}`,
@@ -301,7 +311,7 @@ class Runner {
         // If artifact was an error, output error result on behalf of audit.
         if (artifacts[artifactName] instanceof Error) {
           /** @type {Error} */
-          // @ts-ignore An artifact *could* be an Error, but caught here, so ignore elsewhere.
+          // @ts-expect-error An artifact *could* be an Error, but caught here, so ignore elsewhere.
           const artifactError = artifacts[artifactName];
 
           Sentry.captureException(artifactError, {
@@ -315,7 +325,7 @@ class Runner {
           // Create a friendlier display error and mark it as expected to avoid duplicates in Sentry
           const error = new LHError(LHError.errors.ERRORED_REQUIRED_ARTIFACT,
               {artifactName, errorMessage: artifactError.message});
-          // @ts-ignore Non-standard property added to Error
+          // @ts-expect-error Non-standard property added to Error
           error.expected = true;
           throw error;
         }
@@ -328,17 +338,21 @@ class Runner {
         ...sharedAuditContext,
       };
 
-      // Only pass the declared `requiredArtifacts` to the audit
+      // Only pass the declared required and optional artifacts to the audit
       // The type is masquerading as `LH.Artifacts` but will only contain a subset of the keys
       // to prevent consumers from unnecessary type assertions.
-      const requiredArtifacts = audit.meta.requiredArtifacts
-        .reduce((requiredArtifacts, artifactName) => {
-          const requiredArtifact = artifacts[artifactName];
-          // @ts-ignore tsc can't yet express that artifactName is only a single type in each iteration, not a union of types.
-          requiredArtifacts[artifactName] = requiredArtifact;
-          return requiredArtifacts;
+      const requestedArtifacts = audit.meta.requiredArtifacts
+        .concat(audit.meta.__internalOptionalArtifacts || []);
+      const narrowedArtifacts = requestedArtifacts
+        .reduce((narrowedArtifacts, artifactName) => {
+          const requestedArtifact = artifacts[artifactName];
+          // @ts-expect-error tsc can't yet express that artifactName is only a single type in each iteration, not a union of types.
+          narrowedArtifacts[artifactName] = requestedArtifact;
+          return narrowedArtifacts;
         }, /** @type {LH.Artifacts} */ ({}));
-      const product = await audit.audit(requiredArtifacts, auditContext);
+      const product = await audit.audit(narrowedArtifacts, auditContext);
+      runWarnings.push(...product.runWarnings || []);
+
       auditResult = Audit.generateAuditResult(audit, product);
     } catch (err) {
       // Log error if it hasn't already been logged above.
@@ -360,7 +374,7 @@ class Runner {
    * Searches a pass's artifacts for any `lhrRuntimeError` error artifacts.
    * Returns the first one found or `null` if none found.
    * @param {LH.Artifacts} artifacts
-   * @return {LH.Result['runtimeError']|undefined}
+   * @return {LH.RawIcu<LH.Result['runtimeError']>|undefined}
    */
   static getArtifactRuntimeError(artifacts) {
     const possibleErrorArtifacts = [

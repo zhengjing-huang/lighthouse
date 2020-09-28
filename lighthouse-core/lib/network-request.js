@@ -1,5 +1,5 @@
 /**
- * @license Copyright 2018 Google Inc. All Rights Reserved.
+ * @license Copyright 2018 The Lighthouse Authors. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
  */
@@ -23,6 +23,7 @@ const HEADER_REQ = 'X-RequestMs';
 const HEADER_RES = 'X-ResponseMs';
 const HEADER_TOTAL = 'X-TotalMs';
 const HEADER_FETCHED_SIZE = 'X-TotalFetchedSize';
+const HEADER_PROTOCOL_IS_H2 = 'X-ProtocolIsH2';
 
 /**
  * @typedef HeaderEntry
@@ -49,7 +50,7 @@ const HEADER_FETCHED_SIZE = 'X-TotalFetchedSize';
  * @property {number} responseMs
  */
 
-/** @type {SelfMap<LH.Crdp.Page.ResourceType>} */
+/** @type {SelfMap<LH.Crdp.Network.ResourceType>} */
 const RESOURCE_TYPES = {
   XHR: 'XHR',
   Fetch: 'Fetch',
@@ -112,7 +113,7 @@ class NetworkRequest {
     this.initiator = /** @type {LH.Crdp.Network.Initiator} */ ({type: 'other'});
     /** @type {LH.Crdp.Network.ResourceTiming|undefined} */
     this.timing = undefined;
-    /** @type {LH.Crdp.Page.ResourceType|undefined} */
+    /** @type {LH.Crdp.Network.ResourceType|undefined} */
     this.resourceType = undefined;
     this.mimeType = '';
     /** @type {LH.Crdp.Network.ResourcePriority} */
@@ -195,6 +196,7 @@ class NetworkRequest {
    */
   onResponseReceived(data) {
     this._onResponse(data.response, data.timestamp, data.type);
+    this._updateProtocolForLightrider();
     this.frameId = data.frameId;
   }
 
@@ -367,6 +369,18 @@ class NetworkRequest {
   }
 
   /**
+   * LR loses protocol information.
+   */
+  _updateProtocolForLightrider() {
+    // Bail if we aren't in Lightrider.
+    if (!global.isLightrider) return;
+
+    if (this.responseHeaders.some(item => item.name === HEADER_PROTOCOL_IS_H2)) {
+      this.protocol = 'h2';
+    }
+  }
+
+  /**
    * LR gets additional, accurate timing information from its underlying fetch infrastructure.  This
    * is passed in via X-Headers similar to 'X-TotalFetchedSize'.
    */
@@ -462,5 +476,6 @@ NetworkRequest.HEADER_REQ = HEADER_REQ;
 NetworkRequest.HEADER_RES = HEADER_RES;
 NetworkRequest.HEADER_TOTAL = HEADER_TOTAL;
 NetworkRequest.HEADER_FETCHED_SIZE = HEADER_FETCHED_SIZE;
+NetworkRequest.HEADER_PROTOCOL_IS_H2 = HEADER_PROTOCOL_IS_H2;
 
 module.exports = NetworkRequest;

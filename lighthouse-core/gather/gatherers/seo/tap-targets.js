@@ -1,11 +1,11 @@
 /**
- * @license Copyright 2018 Google Inc. All Rights Reserved.
+ * @license Copyright 2018 The Lighthouse Authors. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
  */
 'use strict';
 
-/* global document, window, getComputedStyle, getElementsInDocument, Node, getNodePath, getNodeSelector, getNodeLabel */
+/* global document, window, getComputedStyle, getElementsInDocument, Node, getNodeDetails */
 
 const Gatherer = require('../gatherer.js');
 const pageFunctions = require('../../../lib/page-functions.js');
@@ -69,17 +69,18 @@ function getClientRects(element) {
 
 /**
  * @param {Element} element
+ * @param {string} tapTargetsSelector
  * @returns {boolean}
  */
 /* istanbul ignore next */
-function elementHasAncestorTapTarget(element) {
+function elementHasAncestorTapTarget(element, tapTargetsSelector) {
   if (!element.parentElement) {
     return false;
   }
   if (element.parentElement.matches(tapTargetsSelector)) {
     return true;
   }
-  return elementHasAncestorTapTarget(element.parentElement);
+  return elementHasAncestorTapTarget(element.parentElement, tapTargetsSelector);
 }
 
 /**
@@ -142,19 +143,6 @@ function elementIsInTextBlock(element) {
 }
 
 /**
- * @param {string} str
- * @param {number} maxLength
- * @return {string}
- */
-/* istanbul ignore next */
-function truncate(str, maxLength) {
-  if (str.length <= maxLength) {
-    return str;
-  }
-  return str.slice(0, maxLength - 1) + '…';
-}
-
-/**
  * @param {Element} el
  * @param {{x: number, y: number}} elCenterPoint
  */
@@ -202,10 +190,11 @@ function disableFixedAndStickyElementPointerEvents() {
 }
 
 /**
+ * @param {string} tapTargetsSelector
  * @returns {LH.Artifacts.TapTarget[]}
  */
 /* istanbul ignore next */
-function gatherTapTargets() {
+function gatherTapTargets(tapTargetsSelector) {
   /** @type {LH.Artifacts.TapTarget[]} */
   const targets = [];
 
@@ -213,7 +202,7 @@ function gatherTapTargets() {
   window.scrollTo(0, 0);
 
   /** @type {HTMLElement[]} */
-  // @ts-ignore - getElementsInDocument put into scope via stringification
+  // @ts-expect-error - getElementsInDocument put into scope via stringification
   const tapTargetElements = getElementsInDocument(tapTargetsSelector);
 
   /** @type {{
@@ -223,7 +212,7 @@ function gatherTapTargets() {
   const tapTargetsWithClientRects = [];
   tapTargetElements.forEach(tapTargetElement => {
     // Filter out tap targets that are likely to cause false failures:
-    if (elementHasAncestorTapTarget(tapTargetElement)) {
+    if (elementHasAncestorTapTarget(tapTargetElement, tapTargetsSelector)) {
       // This is usually intentional, either the tap targets trigger the same action
       // or there's a child with a related action (like a delete button for an item)
       return;
@@ -283,14 +272,9 @@ function gatherTapTargets() {
   for (const {tapTargetElement, visibleClientRects} of tapTargetsWithVisibleClientRects) {
     targets.push({
       clientRects: visibleClientRects,
-      snippet: truncate(tapTargetElement.outerHTML, 300),
-      // @ts-ignore - getNodePath put into scope via stringification
-      path: getNodePath(tapTargetElement),
-      // @ts-ignore - getNodeSelector put into scope via stringification
-      selector: getNodeSelector(tapTargetElement),
-      // @ts-ignore - getNodeLabel put into scope via stringification
-      nodeLabel: getNodeLabel(tapTargetElement),
       href: /** @type {HTMLAnchorElement} */(tapTargetElement)['href'] || '',
+      // @ts-expect-error - getNodeDetails put into scope via stringification
+      ...getNodeDetails(tapTargetElement),
     });
   }
 
@@ -306,13 +290,11 @@ class TapTargets extends Gatherer {
    */
   afterPass(passContext) {
     const expression = `(function() {
-      const tapTargetsSelector = "${tapTargetsSelector}";
       ${pageFunctions.getElementsInDocumentString};
       ${disableFixedAndStickyElementPointerEvents.toString()};
       ${elementIsVisible.toString()};
       ${elementHasAncestorTapTarget.toString()};
       ${elementCenterIsAtZAxisTop.toString()}
-      ${truncate.toString()};
       ${getClientRects.toString()};
       ${hasTextNodeSiblingsFormingTextBlock.toString()};
       ${elementIsInTextBlock.toString()};
@@ -320,12 +302,10 @@ class TapTargets extends Gatherer {
       ${getLargestRect.toString()};
       ${getRectCenterPoint.toString()};
       ${rectContains.toString()};
-      ${pageFunctions.getNodePathString};
-      ${pageFunctions.getNodeSelectorString};
-      ${pageFunctions.getNodeLabelString};
+      ${pageFunctions.getNodeDetailsString};
       ${gatherTapTargets.toString()};
 
-      return gatherTapTargets();
+      return gatherTapTargets("${tapTargetsSelector}");
     })()`;
 
     return passContext.driver.evaluateAsync(expression, {useIsolation: true});
