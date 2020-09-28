@@ -266,6 +266,7 @@ limitations under the License.
     }
 
     .lh-tools {
+      display: flex;
       margin-left: auto;
       will-change: transform;
       min-width: var(--tools-icon-size);
@@ -403,6 +404,10 @@ limitations under the License.
     <a href="" class="lh-topbar__url" target="_blank" rel="noopener"></a>
 
     <div class="lh-tools">
+      <div class="lh-tools-locale">
+        <!-- Filled by ReportUIFeatures._enableSwapLocale -->
+      </div>
+
       <button id="lh-tools-button" class="report-icon report-icon--share lh-tools__button" title="Tools menu" aria-label="Toggle report tools menu" aria-haspopup="menu" aria-expanded="false" aria-controls="lh-tools-dropdown">
         <svg width="100%" height="100%" viewBox="0 0 24 24">
             <path d="M0 0h24v24H0z" fill="none"/>
@@ -419,7 +424,6 @@ limitations under the License.
         <a role="menuitem" tabindex="-1" href="#" class="report-icon report-icon--open lh-tools--viewer" data-i18n="dropdownViewer" data-action="open-viewer"></a>
         <a role="menuitem" tabindex="-1" href="#" class="report-icon report-icon--open lh-tools--gist" data-i18n="dropdownSaveGist" data-action="save-gist"></a>
         <a role="menuitem" tabindex="-1" href="#" class="report-icon report-icon--dark" data-i18n="dropdownDarkTheme" data-action="toggle-dark"></a>
-        <a role="menuitem" tabindex="-1" href="#" class="report-icon report-icon--swap-locale" data-action="swap-locale" disabled>Swap Locale</a>
       </div>
     </div>
   </div>

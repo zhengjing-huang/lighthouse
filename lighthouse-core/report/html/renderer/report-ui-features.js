@@ -157,13 +157,77 @@ class ReportUIFeatures {
   /**
    * @param {{i18nModuleSrc: string, fetchData: (localeModuleName: string) => Promise<LhlMessages|undefined>}} options
    */
-  initSwapLocale(options) {
+  async initSwapLocale(options) {
     this._swapLocaleOptions = options;
-    this._enableSwapLocale();
+
+    try {
+      await this._enableSwapLocale();
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('failed to enable swap locale feature', err);
+    }
   }
 
-  _enableSwapLocale() {
-    this._dom.find('a[data-action="swap-locale"]', this._document).removeAttribute('disabled');
+  async _enableSwapLocale() {
+    const i18nModule = await this._getI18nModule();
+
+    const toolsEl = this._dom.find('.lh-tools-locale', this._document);
+    const inputEl = this._dom.createChildOf(toolsEl, 'input', 'lh-locale-selector', {
+      type: 'text',
+      name: 'lh-locale-list',
+      list: 'lh-locale-list',
+      value: this.json.configSettings.locale,
+    });
+    const datalistEl = this._dom.createChildOf(toolsEl, 'datalist', '', {
+      id: 'lh-locale-list',
+      name: 'lh-locale-list',
+    });
+
+    for (const locale of i18nModule.locales) {
+      this._dom.createChildOf(datalistEl, 'option', '', {
+        value: locale,
+      }).textContent = locale;
+    }
+
+    inputEl.addEventListener('change', () => {
+      const locale = /** @type {LH.Locale} */ (inputEl.value);
+      this._swapLocale(locale);
+    });
+  }
+
+  async _getI18nModule() {
+    if (!this._swapLocaleOptions) throw new Error('must call .initSwapLocale first');
+
+    if (!window.Lighthouse || !window.Lighthouse.i18n) {
+      const script = this._document.createElement('script');
+      script.src = this._swapLocaleOptions.i18nModuleSrc;
+      this._document.body.appendChild(script);
+      await new Promise(r =>
+        this._document.addEventListener('lighthouseModuleLoaded-i18n', r, {once: true}));
+    }
+
+    // @ts-ignore: Should be loaded now.
+    return window.Lighthouse.i18n;
+  }
+
+  /**
+   * @param {LH.Locale} locale
+   */
+  async _swapLocale(locale) {
+    if (!this._swapLocaleOptions) throw new Error('must call .initSwapLocale first');
+
+    const i18nModule = await this._getI18nModule();
+
+    // TODO: locales.js maps a locale code to a locale module. Need that same mapping,
+    // but for locale code to locale module _name_, so that we can fetch w/ that same
+    // name here.
+    const localeModuleName = locale;
+    const lhlMessages = await this._swapLocaleOptions.fetchData(localeModuleName);
+    if (!lhlMessages) throw new Error(`could not fetch data for locale: ${locale}`);
+
+    i18nModule.registerLocaleData(locale, lhlMessages);
+    const newLhr = i18nModule.swapLocale(this.json, locale).lhr;
+    this._refresh(newLhr);
   }
 
   /**
@@ -481,36 +545,6 @@ class ReportUIFeatures {
       }
       case 'toggle-dark': {
         this._toggleDarkTheme();
-        break;
-      }
-      case 'swap-locale': {
-        if (!this._swapLocaleOptions) throw new Error('must call .initSwapLocale first');
-
-        // TODO: esmodules would be nice here...
-        // @ts-ignore
-        if (!window.Lighthouse || !window.Lighthouse.i18n) {
-          const script = this._document.createElement('script');
-          script.src = this._swapLocaleOptions.i18nModuleSrc;
-          this._document.body.appendChild(script);
-          await new Promise(r =>
-            this._document.addEventListener('lighthouseModuleLoaded-i18n', r, {once: true}));
-        }
-
-        // Waiting for UI :)
-        const randomLocales = ['es', 'fr', 'vi', 'en-US'];
-        window.__locale_index = window.__locale_index || 0;
-        const locale = randomLocales[window.__locale_index++ % randomLocales.length];
-
-        // TODO: locales.js maps a locale code to a locale module. Need that same mapping,
-        // but for locale code to locale module _name_, so that we can fetch w/ that same
-        // name here.
-        const localeModuleName = locale;
-        const lhlMessages = await this._swapLocaleOptions.fetchData(localeModuleName);
-        if (!lhlMessages) throw new Error(`could not fetch data for locale: ${locale}`);
-
-        window.Lighthouse.i18n.registerLocaleData(locale, lhlMessages);
-        const newLhr = window.Lighthouse.i18n.swapLocale(this.json, locale).lhr;
-        this._refresh(newLhr);
         break;
       }
     }
