@@ -273,6 +273,7 @@ limitations under the License.
     }
     .lh-tools__button {
       width: var(--tools-icon-size);
+      min-width: 24px;
       height: var(--tools-icon-size);
       cursor: pointer;
       margin-right: 5px;
@@ -349,6 +350,13 @@ limitations under the License.
     /* save-as-gist option hidden in report */
     .lh-tools__dropdown .lh-tools--gist {
       display: none;
+    }
+
+    .lh-locale-selector {
+      width: 100%;
+      color: var(--report-text-color);
+      background-color: var(--locale-selector-background-color);
+      padding: 2px;
     }
 
     @media screen and (max-width: 964px) {

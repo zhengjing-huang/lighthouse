@@ -189,22 +189,17 @@ class ReportUIFeatures {
     const currentLocale = this.json.configSettings.locale;
 
     const toolsEl = this._dom.find('.lh-tools-locale', this._document);
-    const inputEl = this._dom.createChildOf(toolsEl, 'input', 'lh-locale-selector', {
+    const inputEl = this._dom.createChildOf(toolsEl, 'select', 'lh-locale-selector', {
       type: 'text',
-      name: 'lh-locale-list',
-      list: 'lh-locale-list',
-      value: currentLocale,
-    });
-    const datalistEl = this._dom.createChildOf(toolsEl, 'datalist', '', {
-      id: 'lh-locale-list',
       name: 'lh-locale-list',
     });
 
     for (const locale of i18nModule.availableLocales) {
-      const optionEl = this._dom.createChildOf(datalistEl, 'option', '', {
+      const optionEl = this._dom.createChildOf(inputEl, 'option', '', {
         value: locale,
       });
       optionEl.textContent = locale;
+      if (locale === currentLocale) optionEl.selected = true;
 
       // @ts-ignore
       if (window.Intl && window.Intl.DisplayNames) {
@@ -213,10 +208,10 @@ class ReportUIFeatures {
         // @ts-ignore
         const optionLocaleDisplay = new Intl.DisplayNames([locale], {type: 'language'});
 
-        const currentLocaleName = currentLocaleDisplay.of(locale);
         const optionLocaleName = optionLocaleDisplay.of(locale);
-        if (currentLocaleName !== optionLocaleName) {
-          optionEl.textContent = `${currentLocaleName} – ${optionLocaleName}`;
+        const currentLocaleName = currentLocaleDisplay.of(locale);
+        if (optionLocaleName !== currentLocaleName) {
+          optionEl.textContent = `${optionLocaleName} – ${currentLocaleName}`;
         } else {
           optionEl.textContent = currentLocaleName;
         }
