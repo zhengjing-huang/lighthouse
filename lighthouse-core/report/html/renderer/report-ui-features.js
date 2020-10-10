@@ -27,6 +27,9 @@
 
 /** @typedef {import('./dom')} DOM */
 
+const VIEWER_ORIGIN = 'http://localhost:8000';
+const TREEMAP_URL = `${VIEWER_ORIGIN}/treemap/`;
+
 /**
  * @param {HTMLTableElement} tableEl
  * @return {Array<HTMLElement>}
@@ -457,8 +460,7 @@ class ReportUIFeatures {
         break;
       }
       case 'open-viewer': {
-        const viewerPath = '/lighthouse/viewer/';
-        ReportUIFeatures.openTabAndSendJsonReport(this.json, viewerPath);
+        ReportUIFeatures.openTabAndSendJsonReportToViewer(this.json);
         break;
       }
       case 'save-gist': {
@@ -478,6 +480,20 @@ class ReportUIFeatures {
     self.print();
   }
 
+  _openTreemap() {
+    const treemapDebugData = /** @type {LH.Audit.Details.DebugData} */ (
+      this.json.audits['script-treemap-data'].details);
+    if (!treemapDebugData) return;
+
+    const windowName = `treemap-${this.json.requestedUrl}`;
+    // TODO how to use this type ...?
+    /** @type {import('../../../../lighthouse-treemap/types/treemap').Treemap.Options} */
+    const treemapOptions = {
+      lhr: this.json,
+    };
+    ReportUIFeatures.openTabAndSendData(treemapOptions, TREEMAP_URL, windowName);
+  }
+
   /**
    * Keyup handler for the document.
    * @param {KeyboardEvent} e
@@ -492,33 +508,43 @@ class ReportUIFeatures {
   /**
    * Opens a new tab to the online viewer and sends the local page's JSON results
    * to the online viewer using postMessage.
-   * @param {LH.Result} reportJson
-   * @param {string} viewerPath
+   * @param {LH.Result} json
    * @protected
    */
-  static openTabAndSendJsonReport(reportJson, viewerPath) {
-    const VIEWER_ORIGIN = 'https://googlechrome.github.io';
+  static openTabAndSendJsonReportToViewer(json) {
+    // The popup's window.name is keyed by version+url+fetchTime, so we reuse/select tabs correctly
+    // @ts-ignore - If this is a v2 LHR, use old `generatedTime`.
+    const fallbackFetchTime = /** @type {string} */ (json.generatedTime);
+    const fetchTime = json.fetchTime || fallbackFetchTime;
+    const windowName = `${json.lighthouseVersion}-${json.requestedUrl}-${fetchTime}`;
+    ReportUIFeatures.openTabAndSendData(json, `${VIEWER_ORIGIN}/lighthouse/viewer/`, windowName);
+  }
+
+  /**
+   * Opens a new tab to an external page and sends data using postMessage.
+   * @param {Object} data
+   * @param {string} path
+   * @param {string} windowName
+   * @protected
+   */
+  static openTabAndSendData(data, path, windowName) {
+    const origin = new URL(path).origin;
     // Chrome doesn't allow us to immediately postMessage to a popup right
     // after it's created. Normally, we could also listen for the popup window's
     // load event, however it is cross-domain and won't fire. Instead, listen
     // for a message from the target app saying "I'm open".
-    const json = reportJson;
     window.addEventListener('message', function msgHandler(messageEvent) {
-      if (messageEvent.origin !== VIEWER_ORIGIN) {
+      if (messageEvent.origin !== origin) {
         return;
       }
       if (popup && messageEvent.data.opened) {
-        popup.postMessage({lhresults: json}, VIEWER_ORIGIN);
+        popup.postMessage(data, origin);
         window.removeEventListener('message', msgHandler);
       }
     });
 
     // The popup's window.name is keyed by version+url+fetchTime, so we reuse/select tabs correctly
-    // @ts-expect-error - If this is a v2 LHR, use old `generatedTime`.
-    const fallbackFetchTime = /** @type {string} */ (json.generatedTime);
-    const fetchTime = json.fetchTime || fallbackFetchTime;
-    const windowName = `${json.lighthouseVersion}-${json.requestedUrl}-${fetchTime}`;
-    const popup = window.open(`${VIEWER_ORIGIN}${viewerPath}`, windowName);
+    const popup = window.open(path, windowName);
   }
 
   /**
