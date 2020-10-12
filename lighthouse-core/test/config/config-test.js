@@ -160,7 +160,7 @@ describe('Config', () => {
             'ViewportDimensions', // from gatherer
           ],
           __internalOptionalArtifacts: [
-            'SourceMaps', // Not in the config.
+            'NotInTheConfig',
           ],
         };
       }
@@ -201,13 +201,6 @@ describe('Config', () => {
 
     const config = new Config({
       extends: 'lighthouse:default',
-      // TODO(cjamcl): remove when source-maps is in default config.
-      passes: [{
-        passName: 'defaultPass',
-        gatherers: [
-          'source-maps',
-        ],
-      }],
       audits: [ButWillStillTakeYourCrap],
     }, {
       // Trigger filtering logic.
@@ -217,38 +210,6 @@ describe('Config', () => {
       .toEqual(['viewport-dimensions', 'source-maps']);
   });
 
-  // eslint-disable-next-line max-len
-  it('does not throw when an audit requests an optional artifact with no gatherer supplying it', async () => {
-    class DoesntNeedYourCrap extends Audit {
-      static get meta() {
-        return {
-          id: 'optional-artifact-audit',
-          title: 'none',
-          description: 'none',
-          requiredArtifacts: [
-            'URL', // base artifact
-            'ViewportDimensions', // from gatherer
-          ],
-          __internalOptionalArtifacts: [
-            'SourceMaps', // Not in the config.
-          ],
-        };
-      }
-
-      static audit() {}
-    }
-
-    // Shouldn't throw.
-    const config = new Config({
-      extends: 'lighthouse:default',
-      audits: [DoesntNeedYourCrap],
-    }, {
-      // Trigger filtering logic.
-      onlyAudits: ['optional-artifact-audit'],
-    });
-    expect(config.passes[0].gatherers.map(g => g.path)).toEqual(['viewport-dimensions']);
-  });
-
   it('should keep optional artifacts in gatherers after filter', async () => {
     class ButWillStillTakeYourCrap extends Audit {
       static get meta() {
@@ -271,13 +232,6 @@ describe('Config', () => {
 
     const config = new Config({
       extends: 'lighthouse:default',
-      // TODO(cjamcl): remove when source-maps is in default config.
-      passes: [{
-        passName: 'defaultPass',
-        gatherers: [
-          'source-maps',
-        ],
-      }],
       audits: [ButWillStillTakeYourCrap],
     }, {
       // Trigger filtering logic.
@@ -287,38 +241,6 @@ describe('Config', () => {
       .toEqual(['viewport-dimensions', 'source-maps']);
   });
 
-  // eslint-disable-next-line max-len
-  it('does not throw when an audit requests an optional artifact with no gatherer supplying it', async () => {
-    class DoesntNeedYourCrap extends Audit {
-      static get meta() {
-        return {
-          id: 'optional-artifact-audit',
-          title: 'none',
-          description: 'none',
-          requiredArtifacts: [
-            'URL', // base artifact
-            'ViewportDimensions', // from gatherer
-          ],
-          __internalOptionalArtifacts: [
-            'SourceMaps', // Not in the config.
-          ],
-        };
-      }
-
-      static audit() {}
-    }
-
-    // Shouldn't throw.
-    const config = new Config({
-      extends: 'lighthouse:default',
-      audits: [DoesntNeedYourCrap],
-    }, {
-      // Trigger filtering logic.
-      onlyAudits: ['optional-artifact-audit'],
-    });
-    expect(config.passes[0].gatherers.map(g => g.path)).toEqual(['viewport-dimensions']);
-  });
-
   it('should keep optional artifacts in gatherers after filter', async () => {
     class ButWillStillTakeYourCrap extends Audit {
       static get meta() {
@@ -341,13 +263,6 @@ describe('Config', () => {
 
     const config = new Config({
       extends: 'lighthouse:default',
-      // TODO(cjamcl): remove when source-maps is in default config.
-      passes: [{
-        passName: 'defaultPass',
-        gatherers: [
-          'source-maps',
-        ],
-      }],
       audits: [ButWillStillTakeYourCrap],
     }, {
       // Trigger filtering logic.
@@ -400,13 +315,14 @@ describe('Config', () => {
         gatherers: [
           'viewport-dimensions',
           'meta-elements',
+          'inspector-issues',
         ],
       }],
       audits: ['is-on-https'],
     };
 
     const _ = new Config(configJSON);
-    assert.equal(configJSON.passes[0].gatherers.length, 2);
+    assert.equal(configJSON.passes[0].gatherers.length, 3);
   });
 
   it('expands audits', () => {
@@ -1124,17 +1040,6 @@ describe('Config', () => {
       };
       assert.throws(() => new Config(configJson, {configPath: configFixturePath}),
         /^Error: plugin name 'lighthouse-plugin-simple' not allowed because it is the id of a category/); // eslint-disable-line max-len
-    });
-  });
-
-  describe('getCategories', () => {
-    it('returns the IDs & names of the categories', () => {
-      const categories = Config.getCategories(origConfig);
-      assert.equal(Array.isArray(categories), true);
-      assert.equal(categories.length, 5, 'Found the correct number of categories');
-      const haveName = categories.every(cat => cat.title.length);
-      const haveID = categories.every(cat => cat.id.length);
-      assert.equal(haveName === haveID === true, true, 'they have IDs and titles');
     });
   });
 

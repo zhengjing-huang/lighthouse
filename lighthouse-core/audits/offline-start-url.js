@@ -15,7 +15,7 @@ const UIStrings = {
   failureTitle: '`start_url` does not respond with a 200 when offline',
   /** Description of a Lighthouse audit that tells the user why a website should respond to requests when offline. This is displayed after a user expands the section to see more. No character length limits. 'Learn More' becomes link text to additional documentation. */
   description: 'A service worker enables your web app to be reliable in unpredictable ' +
-    'network conditions. [Learn more](https://web.dev/offline-start-url).',
+    'network conditions. [Learn more](https://web.dev/offline-start-url/).',
   /**
    * @description Warning that the audit couldn't find the start_url and used the page's URL instead.
    * @example {No Manifest Fetched.} manifestWarning
@@ -65,6 +65,7 @@ class OfflineStartUrl extends Audit {
     // The StartUrl artifact provides no explanation if a response was received from a service
     // worker with a non-200 status code. In that case, this audit provides its own explanation.
     // In all other cases it defers to the artifact explanation.
+    /** @type {string|LH.IcuMessage|undefined} */
     let explanation = artifacts.StartUrl.explanation;
     if (!explanation && artifacts.StartUrl.statusCode !== -1 && !hasOfflineStartUrl) {
       explanation = str_(UIStrings.errorLoading, {

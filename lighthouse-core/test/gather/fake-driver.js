@@ -62,6 +62,9 @@ function makeFakeDriver({protocolGetVersionResponse}) {
     },
     cleanBrowserCaches() {},
     clearDataForOrigin() {},
+    getImportantStorageWarning() {
+      return Promise.resolve(undefined);
+    },
     cacheNatives() {
       return Promise.resolve();
     },
@@ -97,6 +100,9 @@ function makeFakeDriver({protocolGetVersionResponse}) {
       return Promise.resolve();
     },
     setExtraHTTPHeaders() {
+      return Promise.resolve();
+    },
+    registerRequestIdleCallbackWrap() {
       return Promise.resolve();
     },
   };

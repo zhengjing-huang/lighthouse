@@ -16,18 +16,28 @@
  */
 'use strict';
 
-/* globals self CriticalRequestChainRenderer SnippetRenderer Util URL */
+/* globals self CriticalRequestChainRenderer SnippetRenderer ElementScreenshotRenderer Util URL */
 
 /** @typedef {import('./dom.js')} DOM */
+
+// Convenience types for localized AuditDetails.
+/** @typedef {LH.FormattedIcu<LH.Audit.Details>} AuditDetails */
+/** @typedef {LH.FormattedIcu<LH.Audit.Details.Opportunity>} OpportunityTable */
+/** @typedef {LH.FormattedIcu<LH.Audit.Details.Table>} Table */
+/** @typedef {LH.FormattedIcu<LH.Audit.Details.TableItem>} TableItem */
+/** @typedef {LH.FormattedIcu<LH.Audit.Details.ItemValue>} TableItemValue */
 
 const URL_PREFIXES = ['http://', 'https://', 'data:'];
 
 class DetailsRenderer {
   /**
    * @param {DOM} dom
+   * @param {{fullPageScreenshot?: LH.Audit.Details.FullPageScreenshot}} [options]
    */
-  constructor(dom) {
+  constructor(dom, options = {}) {
     this._dom = dom;
+    this._fullPageScreenshot = options.fullPageScreenshot;
+
     /** @type {ParentNode} */
     this._templateContext; // eslint-disable-line no-unused-expressions
   }
@@ -40,7 +50,7 @@ class DetailsRenderer {
   }
 
   /**
-   * @param {LH.Audit.Details} details
+   * @param {AuditDetails} details
    * @return {Element|null}
    */
   render(details) {
@@ -59,10 +69,11 @@ class DetailsRenderer {
       // Internal-only details, not for rendering.
       case 'screenshot':
       case 'debugdata':
+      case 'full-page-screenshot':
         return null;
 
       default: {
-        // @ts-ignore tsc thinks this is unreachable, but be forward compatible
+        // @ts-expect-error tsc thinks this is unreachable, but be forward compatible
         // with new unexpected detail types.
         return this._renderUnknown(details.type, details);
       }
@@ -108,7 +119,7 @@ class DetailsRenderer {
     try {
       const parsed = Util.parseURL(url);
       displayedPath = parsed.file === '/' ? parsed.origin : parsed.file;
-      displayedHost = parsed.file === '/' ? '' : `(${parsed.hostname})`;
+      displayedHost = parsed.file === '/' || parsed.hostname === '' ? '' : `(${parsed.hostname})`;
       title = url;
     } catch (e) {
       displayedPath = url;
@@ -144,7 +155,9 @@ class DetailsRenderer {
 
     if (!url || !allowedProtocols.includes(url.protocol)) {
       // Fall back to just the link text if invalid or protocol not allowed.
-      return this._renderText(details.text);
+      const element = this._renderText(details.text);
+      element.classList.add('lh-link');
+      return element;
     }
 
     const a = this._dom.createElement('a');
@@ -152,7 +165,7 @@ class DetailsRenderer {
     a.target = '_blank';
     a.textContent = details.text;
     a.href = url.href;
-
+    a.classList.add('lh-link');
     return a;
   }
 
@@ -167,14 +180,13 @@ class DetailsRenderer {
   }
 
   /**
-   * @param {string} text
+   * @param {{value: number, granularity?: number}} details
    * @return {Element}
    */
-  _renderNumeric(text) {
-    // TODO: this should probably accept a number and call `formatNumber` instead of being identical
-    // to _renderText.
+  _renderNumeric(details) {
+    const value = Util.i18n.formatNumber(details.value, details.granularity);
     const element = this._dom.createElement('div', 'lh-numeric');
-    element.textContent = text;
+    element.textContent = value;
     return element;
   }
 
@@ -212,7 +224,7 @@ class DetailsRenderer {
    * Render a details item value for embedding in a table. Renders the value
    * based on the heading's valueType, unless the value itself has a `type`
    * property to override it.
-   * @param {LH.Audit.Details.ItemValue} value
+   * @param {TableItemValue} value
    * @param {LH.Audit.Details.OpportunityColumnHeading} heading
    * @return {Element|null}
    */
@@ -233,6 +245,9 @@ class DetailsRenderer {
         }
         case 'node': {
           return this.renderNode(value);
+        }
+        case 'numeric': {
+          return this._renderNumeric(value);
         }
         case 'source-location': {
           return this.renderSourceLocation(value);
@@ -265,8 +280,8 @@ class DetailsRenderer {
         return this._renderMilliseconds(msValue);
       }
       case 'numeric': {
-        const strValue = String(value);
-        return this._renderNumeric(strValue);
+        const numValue = Number(value);
+        return this._renderNumeric({value: numValue, granularity: heading.granularity});
       }
       case 'text': {
         const strValue = String(value);
@@ -299,8 +314,8 @@ class DetailsRenderer {
    * Get the headings of a table-like details object, converted into the
    * OpportunityColumnHeading type until we have all details use the same
    * heading format.
-   * @param {LH.Audit.Details.Table|LH.Audit.Details.Opportunity} tableLike
-   * @return {Array<LH.Audit.Details.OpportunityColumnHeading>}
+   * @param {Table|OpportunityTable} tableLike
+   * @return {OpportunityTable['headings']}
    */
   _getCanonicalizedHeadingsFromTable(tableLike) {
     if (tableLike.type === 'opportunity') {
@@ -314,19 +329,19 @@ class DetailsRenderer {
    * Get the headings of a table-like details object, converted into the
    * OpportunityColumnHeading type until we have all details use the same
    * heading format.
-   * @param {LH.Audit.Details.TableColumnHeading} heading
-   * @return {LH.Audit.Details.OpportunityColumnHeading}
+   * @param {Table['headings'][number]} heading
+   * @return {OpportunityTable['headings'][number]}
    */
   _getCanonicalizedHeading(heading) {
-    let subHeading;
-    if (heading.subHeading) {
-      subHeading = this._getCanonicalizedSubHeading(heading.subHeading, heading);
+    let subItemsHeading;
+    if (heading.subItemsHeading) {
+      subItemsHeading = this._getCanonicalizedsubItemsHeading(heading.subItemsHeading, heading);
     }
 
     return {
       key: heading.key,
       valueType: heading.itemType,
-      subHeading,
+      subItemsHeading,
       label: heading.text,
       displayUnit: heading.displayUnit,
       granularity: heading.granularity,
@@ -334,46 +349,46 @@ class DetailsRenderer {
   }
 
   /**
-   * @param {Exclude<LH.Audit.Details.TableColumnHeading['subHeading'], undefined>} subHeading
+   * @param {Exclude<LH.Audit.Details.TableColumnHeading['subItemsHeading'], undefined>} subItemsHeading
    * @param {LH.Audit.Details.TableColumnHeading} parentHeading
-   * @return {LH.Audit.Details.OpportunityColumnHeading['subHeading']}
+   * @return {LH.Audit.Details.OpportunityColumnHeading['subItemsHeading']}
    */
-  _getCanonicalizedSubHeading(subHeading, parentHeading) {
+  _getCanonicalizedsubItemsHeading(subItemsHeading, parentHeading) {
     // Low-friction way to prevent commiting a falsy key (which is never allowed for
-    // a subHeading) from passing in CI.
-    if (!subHeading.key) {
+    // a subItemsHeading) from passing in CI.
+    if (!subItemsHeading.key) {
       // eslint-disable-next-line no-console
       console.warn('key should not be null');
     }
 
     return {
-      key: subHeading.key || '',
-      valueType: subHeading.itemType || parentHeading.itemType,
-      granularity: subHeading.granularity || parentHeading.granularity,
-      displayUnit: subHeading.displayUnit || parentHeading.displayUnit,
+      key: subItemsHeading.key || '',
+      valueType: subItemsHeading.itemType || parentHeading.itemType,
+      granularity: subItemsHeading.granularity || parentHeading.granularity,
+      displayUnit: subItemsHeading.displayUnit || parentHeading.displayUnit,
     };
   }
 
   /**
-   * Returns a new heading where the values are defined first by `heading.subHeading`,
-   * and secondly by `heading`. If there is no subHeading, returns null, which will
+   * Returns a new heading where the values are defined first by `heading.subItemsHeading`,
+   * and secondly by `heading`. If there is no subItemsHeading, returns null, which will
    * be rendered as an empty column.
    * @param {LH.Audit.Details.OpportunityColumnHeading} heading
    * @return {LH.Audit.Details.OpportunityColumnHeading | null}
    */
-  _getDerivedSubHeading(heading) {
-    if (!heading.subHeading) return null;
+  _getDerivedsubItemsHeading(heading) {
+    if (!heading.subItemsHeading) return null;
     return {
-      key: heading.subHeading.key || '',
-      valueType: heading.subHeading.valueType || heading.valueType,
-      granularity: heading.subHeading.granularity || heading.granularity,
-      displayUnit: heading.subHeading.displayUnit || heading.displayUnit,
+      key: heading.subItemsHeading.key || '',
+      valueType: heading.subItemsHeading.valueType || heading.valueType,
+      granularity: heading.subItemsHeading.granularity || heading.granularity,
+      displayUnit: heading.subItemsHeading.displayUnit || heading.displayUnit,
       label: '',
     };
   }
 
   /**
-   * @param {LH.Audit.Details.OpportunityItem | LH.Audit.Details.TableItem} item
+   * @param {TableItem} item
    * @param {(LH.Audit.Details.OpportunityColumnHeading | null)[]} headings
    */
   _renderTableRow(item, headings) {
@@ -409,8 +424,8 @@ class DetailsRenderer {
 
   /**
    * Renders one or more rows from a details table item. A single table item can
-   * expand into multiple rows, if there is a subHeading.
-   * @param {LH.Audit.Details.OpportunityItem | LH.Audit.Details.TableItem} item
+   * expand into multiple rows, if there is a subItemsHeading.
+   * @param {TableItem} item
    * @param {LH.Audit.Details.OpportunityColumnHeading[]} headings
    */
   _renderTableRowsFromItem(item, headings) {
@@ -419,11 +434,11 @@ class DetailsRenderer {
 
     if (!item.subItems) return fragment;
 
-    const subHeadings = headings.map(this._getDerivedSubHeading);
-    if (!subHeadings.some(Boolean)) return fragment;
+    const subItemsHeadings = headings.map(this._getDerivedsubItemsHeading);
+    if (!subItemsHeadings.some(Boolean)) return fragment;
 
     for (const subItem of item.subItems.items) {
-      const rowEl = this._renderTableRow(subItem, subHeadings);
+      const rowEl = this._renderTableRow(subItem, subItemsHeadings);
       rowEl.classList.add('lh-sub-item-row');
       fragment.append(rowEl);
     }
@@ -432,7 +447,7 @@ class DetailsRenderer {
   }
 
   /**
-   * @param {LH.Audit.Details.Table|LH.Audit.Details.Opportunity} details
+   * @param {OpportunityTable|Table} details
    * @return {Element}
    */
   _renderTable(details) {
@@ -457,7 +472,7 @@ class DetailsRenderer {
     for (const item of details.items) {
       const rowsFragment = this._renderTableRowsFromItem(item, headings);
       for (const rowEl of this._dom.findAll('tr', rowsFragment)) {
-        // For zebra striping.
+        // For zebra styling.
         rowEl.classList.add(even ? 'lh-row--even' : 'lh-row--odd');
       }
       even = !even;
@@ -506,6 +521,20 @@ class DetailsRenderer {
     if (item.selector) element.setAttribute('data-selector', item.selector);
     if (item.snippet) element.setAttribute('data-snippet', item.snippet);
 
+    if (!item.boundingRect || !this._fullPageScreenshot) {
+      return element;
+    }
+
+    const maxThumbnailSize = {width: 147, height: 100};
+    const elementScreenshot = ElementScreenshotRenderer.render(
+      this._dom,
+      this._templateContext,
+      this._fullPageScreenshot,
+      item.boundingRect,
+      maxThumbnailSize
+    );
+    if (elementScreenshot) element.prepend(elementScreenshot);
+
     return element;
   }
 
@@ -526,7 +555,7 @@ class DetailsRenderer {
     let element;
     if (item.urlProvider === 'network') {
       element = this.renderTextURL(item.url);
-      this._dom.find('a', element).textContent += `:${line}:${column}`;
+      this._dom.find('.lh-link', element).textContent += `:${line}:${column}`;
     } else {
       element = this._renderText(`${item.url}:${line}:${column} (from sourceURL)`);
     }

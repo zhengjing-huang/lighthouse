@@ -6,16 +6,10 @@
 'use strict';
 
 /* eslint-env jest */
-const fs = require('fs');
-const JSBundles = require('../../computed/js-bundles.js');
+const JsBundles = require('../../computed/js-bundles.js');
+const {loadSourceMapFixture} = require('../test-utils.js');
 
-function load(name) {
-  const mapJson = fs.readFileSync(`${__dirname}/../fixtures/source-maps/${name}.js.map`, 'utf-8');
-  const content = fs.readFileSync(`${__dirname}/../fixtures/source-maps/${name}.js`, 'utf-8');
-  return {map: JSON.parse(mapJson), content};
-}
-
-describe('JSBundles computed artifact', () => {
+describe('JsBundles computed artifact', () => {
   it('collates script element and source map', async () => {
     const artifacts = {
       SourceMaps: [{
@@ -24,7 +18,7 @@ describe('JSBundles computed artifact', () => {
       ScriptElements: [{src: 'https://www.example.com/app.js', content: ''}],
     };
     const context = {computedCache: new Map()};
-    const results = await JSBundles.request(artifacts, context);
+    const results = await JsBundles.request(artifacts, context);
     expect(results).toHaveLength(1);
     const result = results[0];
     expect(result.rawMap).toBe(artifacts.SourceMaps[0].map);
@@ -34,13 +28,13 @@ describe('JSBundles computed artifact', () => {
   it('works (simple map)', async () => {
     // This map is from source-map-explorer.
     // https://github.com/danvk/source-map-explorer/tree/4b95f6e7dfe0058d791dcec2107fee43a1ebf02e/tests
-    const {map, content} = load('foo.min');
+    const {map, content} = loadSourceMapFixture('foo.min');
     const artifacts = {
       SourceMaps: [{scriptUrl: 'https://example.com/foo.min.js', map}],
       ScriptElements: [{src: 'https://example.com/foo.min.js', content}],
     };
     const context = {computedCache: new Map()};
-    const results = await JSBundles.request(artifacts, context);
+    const results = await JsBundles.request(artifacts, context);
 
     expect(results).toHaveLength(1);
     const result = results[0];
@@ -80,14 +74,14 @@ describe('JSBundles computed artifact', () => {
   it('works (simple map) (null source)', async () => {
     // This map is from source-map-explorer.
     // https://github.com/danvk/source-map-explorer/tree/4b95f6e7dfe0058d791dcec2107fee43a1ebf02e/tests
-    const {map, content} = load('foo.min');
+    const {map, content} = loadSourceMapFixture('foo.min');
     map.sources[1] = null;
     const artifacts = {
       SourceMaps: [{scriptUrl: 'https://example.com/foo.min.js', map}],
       ScriptElements: [{src: 'https://example.com/foo.min.js', content}],
     };
     const context = {computedCache: new Map()};
-    const results = await JSBundles.request(artifacts, context);
+    const results = await JsBundles.request(artifacts, context);
 
     expect(results).toHaveLength(1);
     const result = results[0];
@@ -123,13 +117,13 @@ describe('JSBundles computed artifact', () => {
   });
 
   it('works (complex map)', async () => {
-    const {map, content} = load('squoosh');
+    const {map, content} = loadSourceMapFixture('squoosh');
     const artifacts = {
       SourceMaps: [{scriptUrl: 'https://squoosh.app/main-app.js', map}],
       ScriptElements: [{src: 'https://squoosh.app/main-app.js', content}],
     };
     const context = {computedCache: new Map()};
-    const results = await JSBundles.request(artifacts, context);
+    const results = await JsBundles.request(artifacts, context);
 
     expect(results).toHaveLength(1);
     const result = results[0];
@@ -240,7 +234,7 @@ describe('JSBundles computed artifact', () => {
     let content;
 
     beforeEach(() => {
-      data = load('foo.min');
+      data = loadSourceMapFixture('foo.min');
       map = data.map;
       content = data.content;
     });
@@ -251,7 +245,7 @@ describe('JSBundles computed artifact', () => {
         ScriptElements: [{src: 'https://example.com/foo.min.js', content}],
       };
       const context = {computedCache: new Map()};
-      const results = await JSBundles.request(artifacts, context);
+      const results = await JsBundles.request(artifacts, context);
       const result = results[0];
       const entry = result.map.findEntry(0, 644);
       return {sizes: result.sizes, entry};
@@ -292,9 +286,7 @@ describe('JSBundles computed artifact', () => {
             "sourceURL": "src/foo.js",
           },
           "sizes": Object {
-            "files": Object {},
-            "totalBytes": 13,
-            "unmappedBytes": 13,
+            "errorMessage": "compiled.js.map mapping for last column out of bounds: 1:14",
           },
         }
       `);
@@ -314,9 +306,7 @@ describe('JSBundles computed artifact', () => {
             "sourceURL": "src/foo.js",
           },
           "sizes": Object {
-            "files": Object {},
-            "totalBytes": 0,
-            "unmappedBytes": 0,
+            "errorMessage": "compiled.js.map mapping for column out of bounds: 1:1",
           },
         }
       `);
@@ -343,6 +333,47 @@ describe('JSBundles computed artifact', () => {
             },
             "totalBytes": 718,
             "unmappedBytes": 36,
+          },
+        }
+      `);
+    });
+
+    it('emits error when column out of bounds', async () => {
+      const newMappings = map.mappings.split(',');
+      expect(newMappings[1]).toBe('SAAAA');
+      // Make the column offset very big, force out of bounds.
+      // See https://www.mattzeunert.com/2016/02/14/how-do-source-maps-work.html
+      newMappings[1] = 'kD' + 'AAAA';
+      map.mappings = newMappings.join(',');
+      expect(await test()).toMatchInlineSnapshot(`
+        Object {
+          "entry": SourceMapEntry {
+            "columnNumber": 642,
+            "lastColumnNumber": 651,
+            "lineNumber": 0,
+            "name": undefined,
+            "sourceColumnNumber": 18,
+            "sourceLineNumber": 1,
+            "sourceURL": "src/foo.js",
+          },
+          "sizes": Object {
+            "errorMessage": "compiled.js.map mapping for last column out of bounds: 1:685",
+          },
+        }
+      `);
+    });
+
+    it('emits error when line out of bounds', async () => {
+      const newMappings = map.mappings.split(',');
+      expect(newMappings[1]).toBe('SAAAA');
+      // Make the line offset very big, force out of bounds.
+      // See https://sourcemaps.info/spec.html#:~:text=broken%20down%20as%20follows
+      map.mappings = ';'.repeat(10) + map.mappings;
+      expect(await test()).toMatchInlineSnapshot(`
+        Object {
+          "entry": null,
+          "sizes": Object {
+            "errorMessage": "compiled.js.map mapping for line out of bounds: 11",
           },
         }
       `);
