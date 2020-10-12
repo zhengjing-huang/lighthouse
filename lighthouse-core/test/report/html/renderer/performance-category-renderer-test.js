@@ -300,7 +300,8 @@ describe('PerfCategoryRenderer', () => {
     it('uses null if the metric\'s value is null (LR)', () => {
       const categoryClone = JSON.parse(JSON.stringify(category));
       const lcp = categoryClone.auditRefs.find(audit => audit.id === 'largest-contentful-paint');
-      lcp.result.numericValue = null;  // In LR, undefined becomes null
+      // In LR, we think there might be some case where undefined becomes null, but we can't prove it.
+      lcp.result.numericValue = null; 
       lcp.result.score = null;
       const href = renderer._getScoringCalculatorHref(categoryClone.auditRefs);
       expect(href).toContain('largest-contentful-paint=null');
