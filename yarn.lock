@@ -8294,10 +8294,9 @@ webidl-conversions@^4.0.2:
   resolved "https://registry.yarnpkg.com/webidl-conversions/-/webidl-conversions-4.0.2.tgz#a855980b1f0b6b359ba1d5d9fb39ae941faa63ad"
   integrity sha512-YQ+BmxuTgd6UXZW3+ICGfyqRyHXVlD5GtQr5+qjiNW7bF0cqrzX500HVXPBOvgXb5YnzDd+h0zqyv61KUD7+Sg==
 
-webtreemap-cdt@^3.0.1:
+"webtreemap-cdt@git://github.com/paulirish/webtreemap-cdt.git#master":
   version "3.0.1"
-  resolved "https://registry.yarnpkg.com/webtreemap-cdt/-/webtreemap-cdt-3.0.1.tgz#21f88c77c48a249caf7df828010c7787cd1fcca5"
-  integrity sha512-GKOtCVZOHKqNG67wq0YC+Xkb9OhiT0NWsZYnypwmkteuCj1xiROYCk/qhJnHnXa8NF6dZxys+4r2sbHY3Ujc9w==
+  resolved "git://github.com/paulirish/webtreemap-cdt.git#8bec71dae9ada4fcb8a79d5b58aa4e688249069b"
   dependencies:
     commander "^2.11.0"
 

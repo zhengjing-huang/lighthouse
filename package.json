@@ -149,7 +149,7 @@
     "puppeteer": "^1.19.0",
     "terser": "^4.2.0",
     "typescript": "3.9.7",
-    "webtreemap-cdt": "^3.0.1"
+    "webtreemap-cdt": "git://github.com/paulirish/webtreemap-cdt.git#master"
   },
   "dependencies": {
     "axe-core": "3.5.5",
