@@ -523,12 +523,12 @@ class ReportUIFeatures {
   /**
    * Opens a new tab to an external page and sends data using postMessage.
    * @param {Object} data
-   * @param {string} path
+   * @param {string} url
    * @param {string} windowName
    * @protected
    */
-  static openTabAndSendData(data, path, windowName) {
-    const origin = new URL(path).origin;
+  static openTabAndSendData(data, url, windowName) {
+    const origin = new URL(url).origin;
     // Chrome doesn't allow us to immediately postMessage to a popup right
     // after it's created. Normally, we could also listen for the popup window's
     // load event, however it is cross-domain and won't fire. Instead, listen
@@ -544,7 +544,7 @@ class ReportUIFeatures {
     });
 
     // The popup's window.name is keyed by version+url+fetchTime, so we reuse/select tabs correctly
-    const popup = window.open(path, windowName);
+    const popup = window.open(url, windowName);
   }
 
   /**
