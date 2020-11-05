@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 ##
 # @license Copyright 2020 The Lighthouse Authors. All Rights Reserved.
@@ -6,19 +6,19 @@
 # Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 ##
 
-set -u
+set -euo pipefail
 
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-export LH_ROOT="$SCRIPT_DIR/../../.."
+# Saves the necessary contents of the `latest-run/` folder to a subfolder for easier A/B comparison.
+# Restoring the contents to `latest-run/` is just `cp latest-run/latest-run-bak/* latest-run/`.
 
-bash "$SCRIPT_DIR/roll-devtools.sh" || exit 1
-bash "$SCRIPT_DIR/web-test-server.sh" http/tests/devtools/lighthouse $*
-status=$?
+DIRNAME="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+LH_ROOT="$DIRNAME/../.."
+TARGET_DIR=${1:-latest-run-bak}
 
-if [ ! $status -eq 0 ]; then
-  # Print failure diffs to stdout.
-  find "$LH_ROOT/.tmp/layout-test-results/retry_3" -name '*-diff.txt' -exec cat {} \;
-  echo "❌❌❌ webtests failed. to rebaseline run: yarn update:test-devtools ❌❌❌"
-fi
+cd "$LH_ROOT/latest-run"
+mkdir -p "$TARGET_DIR"
 
-exit $status
+for file in *.json ; do
+  echo "Copying $file to $TARGET_DIR..."
+  cp "$file" "$TARGET_DIR/$file"
+done

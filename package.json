@@ -70,15 +70,18 @@
     "update:test-devtools": "bash lighthouse-core/test/chromium-web-tests/test-locally.sh --reset-results",
     "test-devtools": "bash lighthouse-core/test/chromium-web-tests/test-locally.sh",
     "open-devtools": "bash lighthouse-core/scripts/open-devtools.sh",
+    "run-devtools": "bash lighthouse-core/test/chromium-web-tests/test-page-devtools.sh",
     "diff:sample-json": "yarn i18n:checks && bash lighthouse-core/scripts/assert-golden-lhr-unchanged.sh",
     "computeBenchmarkIndex": "./lighthouse-core/scripts/benchmark.js",
     "minify-latest-run": "./lighthouse-core/scripts/lantern/minify-trace.js ./latest-run/defaultPass.trace.json ./latest-run/defaultPass.trace.min.json && ./lighthouse-core/scripts/lantern/minify-devtoolslog.js ./latest-run/defaultPass.devtoolslog.json ./latest-run/defaultPass.devtoolslog.min.json",
+    "save-latest-run": "./lighthouse-core/scripts/save-latest-run.sh",
     "compile-proto": "protoc --python_out=./ ./proto/lighthouse-result.proto && mv ./proto/*_pb2.py ./proto/scripts || (echo \"❌ Install protobuf ≥ 3.7.1 to compile the proto file.\" && false)",
     "build-proto-roundtrip": "mkdir -p .tmp && cross-env PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION_VERSION=2 python proto/scripts/json_roundtrip_via_proto.py",
     "static-server": "node lighthouse-cli/test/fixtures/static-server.js",
     "serve-dist": "cd dist && python -m SimpleHTTPServer",
     "serve-treemap": "yarn serve-dist",
-    "serve-viewer": "yarn serve-dist"
+    "serve-viewer": "yarn serve-dist",
+    "serve-gh-pages": "yarn serve-dist"
   },
   "devDependencies": {
     "@build-tracker/cli": "^1.0.0-beta.15",
