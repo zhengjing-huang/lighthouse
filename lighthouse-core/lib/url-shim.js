@@ -12,10 +12,16 @@
 /* global URL */
 
 const Util = require('../report/html/renderer/util.js');
+const NetworkRequest = require('./network-request.js');
 
 const allowedProtocols = [
   'https:', 'http:', 'chrome:', 'chrome-extension:',
 ];
+
+const SECURE_SCHEMES = ['data', 'https', 'wss', 'blob', 'chrome', 'chrome-extension', 'about',
+  'filesystem'];
+const SECURE_LOCALHOST_DOMAINS = ['localhost', '127.0.0.1'];
+const NON_NETWORK_PROTOCOLS = ['blob', 'data', 'intent'];
 
 /**
  * There is fancy URL rewriting logic for the chrome://settings page that we need to work around.
@@ -172,11 +178,34 @@ class URLShim extends URL {
       return false;
     }
   }
+
+  /**
+   * Determine if the url has a protocol that we're able to test
+   * @param {string} host
+   * @return {boolean}
+   */
+  static isLikeLocalhost(host) {
+    return SECURE_LOCALHOST_DOMAINS.includes(host);
+  }
+
+  /**
+   * @param {string} scheme
+   * @return {boolean}
+   */
+  static isSecureScheme(scheme) {
+    return SECURE_SCHEMES.includes(scheme);
+  }
+
+  /**
+   * @param {NetworkRequest['protocol']} devtoolsProtocol Has no colon, unlike `new URL(href).protocol`
+   * @return {boolean}
+   */
+  static isNonNetworkProtocol(devtoolsProtocol) {
+    return NON_NETWORK_PROTOCOLS.includes(devtoolsProtocol);
+  }
 }
 
 URLShim.URL = URL;
-
-URLShim.NON_NETWORK_PROTOCOLS = ['blob', 'data', 'intent'];
 
 URLShim.INVALID_URL_DEBUG_STRING =
     'Lighthouse was unable to determine the URL of some script executions. ' +

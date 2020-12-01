@@ -13,7 +13,6 @@
 
 const URL = require('./url-shim.js');
 
-const SECURE_SCHEMES = ['data', 'https', 'wss', 'blob', 'chrome', 'chrome-extension', 'about'];
 
 // Lightrider X-Header names for timing information.
 // See: _updateTransferSizeForLightrider and _updateTimingsForLightrider.
@@ -172,7 +171,7 @@ class NetworkRequest {
       host: url.hostname,
       securityOrigin: url.origin,
     };
-    this.isSecure = SECURE_SCHEMES.includes(this.parsedURL.scheme);
+    this.isSecure = URL.isSecureScheme(this.parsedURL.scheme);
 
     this.startTime = data.timestamp;
 
@@ -467,6 +466,24 @@ class NetworkRequest {
 
   static get TYPES() {
     return RESOURCE_TYPES;
+  }
+
+ /**
+   * @param {NetworkRequest} record
+   * @return {boolean}
+   */
+  static isNonNetworkRequest(record) {
+    return URL.isNonNetworkProtocol(record.protocol);
+  }
+
+ /**
+   * @param {NetworkRequest} record
+   * @return {boolean}
+   */
+  static isSecureRequest(record) {
+    return URL.isSecureScheme(record.parsedURL.scheme) ||
+        URL.isSecureScheme(record.protocol) ||
+        URL.isLikeLocalhost(record.parsedURL.host);
   }
 }
 

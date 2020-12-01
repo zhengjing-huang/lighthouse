@@ -62,7 +62,7 @@ class NetworkNode extends BaseNode {
    * @return {boolean}
    */
   get isNonNetworkProtocol() {
-    return URL.NON_NETWORK_PROTOCOLS.includes(this._record.protocol);
+    return NetworkRequest.isNonNetworkRequest(this._record);
   }
 
 
