@@ -116,6 +116,10 @@ class PerformanceCategoryRenderer extends CategoryRenderer {
     if (fci) v5andv6metrics.push(fci);
     if (fmp) v5andv6metrics.push(fmp);
 
+
+    // TODO(paulirish): can drop these now that the acroynyms are in the config.
+
+
     /** @type {Record<string, string>} */
     const acronymMapping = {
       'cumulative-layout-shift': 'CLS',
