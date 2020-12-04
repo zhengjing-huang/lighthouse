@@ -7,6 +7,7 @@
 
 const Audit = require('./audit.js');
 const i18n = require('../lib/i18n/i18n.js');
+const URL = require('../lib/url-shim.js');
 
 const UIStrings = {
   /** Title of a Lighthouse audit that provides detail on HTTP to HTTPS redirects. This descriptive title is shown to users when HTTP traffic is redirected to HTTPS. */
@@ -30,15 +31,25 @@ class RedirectsHTTP extends Audit {
       title: str_(UIStrings.title),
       failureTitle: str_(UIStrings.failureTitle),
       description: str_(UIStrings.description),
-      requiredArtifacts: ['HTTPRedirect'],
+      requiredArtifacts: ['HTTPRedirect', 'URL'],
     };
   }
 
   /**
    * @param {LH.Artifacts} artifacts
+   * @param {LH.Audit.Context} context
    * @return {LH.Audit.Product}
    */
-  static audit(artifacts) {
+  static audit(artifacts, context) {
+    // Redirecting HTTP to HTTPS makes no sense on localhost
+    const url = new URL(artifacts.URL.finalUrl);
+    if (URL.isLikeLocalhost(url.hostname)) {
+      return {
+        score: 1,
+        notApplicable: true,
+      };
+    }
+
     return {
       score: Number(artifacts.HTTPRedirect.value),
     };
