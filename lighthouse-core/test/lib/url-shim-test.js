@@ -318,6 +318,7 @@ describe('URL Shim', () => {
     assert.ok(URL.isSecureScheme('wss'));
     assert.ok(URL.isSecureScheme('about'));
     assert.ok(URL.isSecureScheme('data'));
+    assert.ok(URL.isSecureScheme('filesystem'));
 
     assert.ok(!URL.isSecureScheme('http'));
     assert.ok(!URL.isSecureScheme('ws'));
