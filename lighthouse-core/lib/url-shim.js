@@ -12,7 +12,8 @@
 /* global URL */
 
 const Util = require('../report/html/renderer/util.js');
-const NetworkRequest = require('./network-request.js');
+
+/** @typedef {import('./network-request.js')} NetworkRequest */
 
 const allowedProtocols = [
   'https:', 'http:', 'chrome:', 'chrome-extension:',

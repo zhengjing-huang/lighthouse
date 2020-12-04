@@ -75,7 +75,7 @@ class HTTPS extends Audit {
     const devtoolsLogs = artifacts.devtoolsLogs[Audit.DEFAULT_PASS];
     return NetworkRecords.request(devtoolsLogs, context).then(networkRecords => {
       const insecureURLs = networkRecords
-          .filter(record => !NetworkRequest.isSecureRecord(record))
+          .filter(record => !NetworkRequest.isSecureRequest(record))
           .map(record => URL.elideDataURI(record.url));
 
       /** @type {Array<{url: string, resolution?: LH.IcuMessage|string}>}  */
