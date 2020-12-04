@@ -17,7 +17,7 @@ describe('Security: HTTP->HTTPS audit', () => {
         value: false,
       },
       URL: {
-        finalUrl: 'https://paulirish.com/'
+        finalUrl: 'https://paulirish.com/',
       },
     }).score, 0);
   });
@@ -28,7 +28,7 @@ describe('Security: HTTP->HTTPS audit', () => {
         value: true,
       },
       URL: {
-        finalUrl: 'https://paulirish.com/'
+        finalUrl: 'https://paulirish.com/',
       },
     }).score, 1);
   });
@@ -39,7 +39,7 @@ describe('Security: HTTP->HTTPS audit', () => {
         value: false,
       },
       URL: {
-        finalUrl: 'http://localhost:8080/page.html'
+        finalUrl: 'http://localhost:8080/page.html',
       },
     });
 

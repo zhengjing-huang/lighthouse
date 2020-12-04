@@ -7,7 +7,6 @@
 
 const BaseNode = require('./base-node.js');
 const NetworkRequest = require('../network-request.js');
-const URL = require('../url-shim.js');
 
 class NetworkNode extends BaseNode {
   /**

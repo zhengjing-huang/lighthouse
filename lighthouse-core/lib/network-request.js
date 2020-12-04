@@ -468,7 +468,7 @@ class NetworkRequest {
     return RESOURCE_TYPES;
   }
 
- /**
+  /**
    * @param {NetworkRequest} record
    * @return {boolean}
    */
@@ -476,7 +476,7 @@ class NetworkRequest {
     return URL.isNonNetworkProtocol(record.protocol);
   }
 
- /**
+  /**
    * @param {NetworkRequest} record
    * @return {boolean}
    */

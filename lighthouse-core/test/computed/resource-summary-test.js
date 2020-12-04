@@ -82,9 +82,12 @@ describe('Resource summary computed', () => {
 
     artifacts = mockArtifacts([
       {url: 'http://example.com/file.html', resourceType: 'Document', transferSize: 30},
-      {url: 'data:image/png;base64,iVBORw0KGgoAA', resourceType: 'Image', transferSize: 10, protocol: 'data'},
-      {url: 'blob:http://www.example.com/dflskdfjlkj', resourceType: 'Other', transferSize: 99, protocol: 'blob'},
-      {url: 'intent://example.com', resourceType: 'Other', transferSize: 1, protocol: 'intent'},
+      {url: 'data:image/png;base64,iVBORw0KGgoAA', resourceType: 'Image', transferSize: 10,
+        protocol: 'data'},
+      {url: 'blob:http://www.example.com/dflskdfjlkj', resourceType: 'Other', transferSize: 99,
+        protocol: 'blob'},
+      {url: 'intent://example.com', resourceType: 'Other', transferSize: 1,
+        protocol: 'intent'},
     ]);
 
     const result = await ComputedResourceSummary.request(artifacts, context);

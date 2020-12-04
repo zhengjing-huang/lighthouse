@@ -37,10 +37,9 @@ class RedirectsHTTP extends Audit {
 
   /**
    * @param {LH.Artifacts} artifacts
-   * @param {LH.Audit.Context} context
    * @return {LH.Audit.Product}
    */
-  static audit(artifacts, context) {
+  static audit(artifacts) {
     // Redirecting HTTP to HTTPS makes no sense on localhost
     const url = new URL(artifacts.URL.finalUrl);
     if (URL.isLikeLocalhost(url.hostname)) {

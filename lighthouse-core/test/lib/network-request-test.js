@@ -297,7 +297,7 @@ describe('NetworkRequest', () => {
       expect(isSecureRequest({parsedURL: {scheme: 'blob', host: ''}})).toBe(true);
       expect(isSecureRequest({parsedURL: {scheme: 'filesystem', host: ''}})).toBe(true);
       expect(isSecureRequest({parsedURL: {scheme: 'about', host: ''}})).toBe(true);
-      expect(isSecureRequest({parsedURL: {scheme: '', host: ''}, protocol: 'blob'}),).toBe(true);
+      expect(isSecureRequest({parsedURL: {scheme: '', host: ''}, protocol: 'blob'})).toBe(true);
       expect(isSecureRequest({parsedURL: {scheme: 'chrome', host: ''}})).toBe(true);
       expect(isSecureRequest({parsedURL: {scheme: 'chrome-extension', host: ''}})).toBe(true);
     });
