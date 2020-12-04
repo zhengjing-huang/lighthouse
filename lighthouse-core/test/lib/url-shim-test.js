@@ -303,4 +303,23 @@ describe('URL Shim', () => {
       assert.ok(!URL.equalWithExcludedFragments('utter nonsense', 'http://example.com'));
     });
   });
+
+  describe('isLikeLocalhost', () => {
+    assert.ok(URL.isLikeLocalhost(new URL('http://localhost/').hostname));
+    assert.ok(URL.isLikeLocalhost(new URL('http://localhost:10200/').hostname));
+    assert.ok(URL.isLikeLocalhost(new URL('http://127.0.0.1/page.html').hostname));
+    assert.ok(URL.isLikeLocalhost(new URL('https://localhost/').hostname));
+
+    assert.ok(!URL.isLikeLocalhost(new URL('http://8.8.8.8/').hostname));
+    assert.ok(!URL.isLikeLocalhost(new URL('http://example.com/').hostname));
+  });
+
+  describe('isSecureScheme', () => {
+    assert.ok(URL.isSecureScheme('wss'));
+    assert.ok(URL.isSecureScheme('about'));
+    assert.ok(URL.isSecureScheme('data'));
+
+    assert.ok(!URL.isSecureScheme('http'));
+    assert.ok(!URL.isSecureScheme('ws'));
+  });
 });

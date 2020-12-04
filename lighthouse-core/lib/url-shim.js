@@ -181,16 +181,15 @@ class URLShim extends URL {
   }
 
   /**
-   * Determine if the url has a protocol that we're able to test
-   * @param {string} host
+   * @param {string} hostname Either a `new URL(url).hostname` or a `networkRequest.parsedUrl.host`
    * @return {boolean}
    */
-  static isLikeLocalhost(host) {
-    return SECURE_LOCALHOST_DOMAINS.includes(host);
+  static isLikeLocalhost(hostname) {
+    return SECURE_LOCALHOST_DOMAINS.includes(hostname);
   }
 
   /**
-   * @param {string} scheme
+   * @param {NetworkRequest['parsedURL']['scheme']} scheme
    * @return {boolean}
    */
   static isSecureScheme(scheme) {
