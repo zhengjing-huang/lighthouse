@@ -1,0 +1,22 @@
+name: npm publish
+on:
+  schedule:
+    - cron: "@daily"
+  workflow_dispatch: {}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12.x
+      - run: yarn
+
+      - name: bash $GITHUB_WORKSPACE/.github/scripts/bump-nightly-version.sh
+      - uses: JS-DevTools/npm-publish@v1
+        with:
+          dry-run: true
+          tag: next
+          token: ${{ secrets.NPM_TOKEN }}
