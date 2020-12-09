@@ -33,6 +33,7 @@ const GatherRunner = {
   getNonHtmlError: makeParamsOptional(GatherRunner_.getNonHtmlError),
   getPageLoadError: makeParamsOptional(GatherRunner_.getPageLoadError),
   getWebAppManifest: makeParamsOptional(GatherRunner_.getWebAppManifest),
+  getSlowHostCpuWarning: makeParamsOptional(GatherRunner_.getSlowHostCpuWarning),
   initializeBaseArtifacts: makeParamsOptional(GatherRunner_.initializeBaseArtifacts),
   loadPage: makeParamsOptional(GatherRunner_.loadPage),
   run: makeParamsOptional(GatherRunner_.run),
@@ -1464,64 +1465,6 @@ describe('GatherRunner', function() {
       });
     });
 
-    it('passes gatherer options', async () => {
-      /** @type {Record<string, any[]>} */
-      const calls = {beforePass: [], pass: [], afterPass: []};
-      /** @param {string} name */
-      const makeEavesdropGatherer = name => {
-        const C = class extends Gatherer {};
-        Object.defineProperty(C, 'name', {value: name});
-        return Object.assign(new C, {
-          /** @param {LH.Gatherer.PassContext} context */
-          beforePass(context) {
-            calls.beforePass.push(context.options);
-          },
-          /** @param {LH.Gatherer.PassContext} context */
-          pass(context) {
-            calls.pass.push(context.options);
-          },
-          /** @param {LH.Gatherer.PassContext} context */
-          afterPass(context) {
-            calls.afterPass.push(context.options);
-            // @ts-expect-error
-            return context.options.x || 'none';
-          },
-        });
-      };
-
-      const gatherers = [
-        {instance: makeEavesdropGatherer('EavesdropGatherer1'), options: {x: 1}},
-        {instance: makeEavesdropGatherer('EavesdropGatherer2'), options: {x: 2}},
-        {instance: makeEavesdropGatherer('EavesdropGatherer3')},
-      ];
-
-      const config = makeConfig({
-        passes: [{
-          passName: 'defaultPass',
-          gatherers,
-        }],
-      });
-
-      /** @type {any} Using Test-only gatherers. */
-      const artifacts = await GatherRunner.run(config.passes, {
-        driver: fakeDriver,
-        requestedUrl: 'https://example.com',
-        settings: config.settings,
-      });
-
-      assert.equal(artifacts.EavesdropGatherer1, 1);
-      assert.equal(artifacts.EavesdropGatherer2, 2);
-      assert.equal(artifacts.EavesdropGatherer3, 'none');
-
-      // assert that all three phases received the gatherer options expected
-      const expectedOptions = [{x: 1}, {x: 2}, {}];
-      for (let i = 0; i < 3; i++) {
-        assert.deepEqual(calls.beforePass[i], expectedOptions[i]);
-        assert.deepEqual(calls.pass[i], expectedOptions[i]);
-        assert.deepEqual(calls.afterPass[i], expectedOptions[i]);
-      }
-    });
-
     it('uses the last not-undefined phase result as artifact', async () => {
       const recoverableError = new Error('My recoverable error');
       const someOtherError = new Error('Bad, bad error.');
@@ -1777,7 +1720,7 @@ describe('GatherRunner', function() {
       };
     });
 
-    it('should return the response from the protocol, if in >=M82 format', async () => {
+    it('should return the response from the protocol', async () => {
       connectionStub.sendCommand
         .mockResponse('Page.getInstallabilityErrors', {
           installabilityErrors: [{errorId: 'no-icon-available', errorArguments: []}],
@@ -1787,17 +1730,53 @@ describe('GatherRunner', function() {
         errors: [{errorId: 'no-icon-available', errorArguments: []}],
       });
     });
+  });
 
-    it('should transform the response from the protocol, if in <M82 format', async () => {
-      connectionStub.sendCommand
-        .mockResponse('Page.getInstallabilityErrors', {
-          // @ts-expect-error
-          errors: ['Downloaded icon was empty or corrupted'],
-        });
-      const result = await GatherRunner.getInstallabilityErrors(passContext);
-      expect(result).toEqual({
-        errors: [{errorId: 'no-icon-available', errorArguments: []}],
-      });
+  describe('.getSlowHostCpuWarning', () => {
+    /** @type {RecursivePartial<LH.Gatherer.PassContext>} */
+    let passContext;
+
+    beforeEach(() => {
+      passContext = {
+        settings: {
+          channel: 'cli',
+          throttlingMethod: 'simulate',
+          throttling: {cpuSlowdownMultiplier: 4},
+        },
+        baseArtifacts: {
+          BenchmarkIndex: 500,
+        },
+      };
+    });
+
+    it('should add a warning when benchmarkindex is low', () => {
+      expect(GatherRunner.getSlowHostCpuWarning(passContext))
+        .toBeDisplayString(/appears to have a slower CPU/);
+    });
+
+    it('should ignore non-cli channels', () => {
+      Object.assign(passContext.settings, {channel: 'devtools'});
+      expect(GatherRunner.getSlowHostCpuWarning(passContext)).toBe(undefined);
+
+      Object.assign(passContext.settings, {channel: 'wpt'});
+      expect(GatherRunner.getSlowHostCpuWarning(passContext)).toBe(undefined);
+
+      Object.assign(passContext.settings, {channel: 'psi'});
+      expect(GatherRunner.getSlowHostCpuWarning(passContext)).toBe(undefined);
+    });
+
+    it('should ignore non-default throttling settings', () => {
+      Object.assign(passContext.settings, {throttling: {cpuSlowdownMultiplier: 2}});
+      expect(GatherRunner.getSlowHostCpuWarning(passContext)).toBe(undefined);
+
+      Object.assign(passContext.settings, {throttlingMethod: 'provided'});
+      Object.assign(passContext.settings, {throttling: {cpuSlowdownMultiplier: 4}});
+      expect(GatherRunner.getSlowHostCpuWarning(passContext)).toBe(undefined);
+    });
+
+    it('should ignore high benchmarkindex values', () => {
+      Object.assign(passContext.baseArtifacts, {BenchmarkIndex: 1500});
+      expect(GatherRunner.getSlowHostCpuWarning(passContext)).toBe(undefined);
     });
   });
 

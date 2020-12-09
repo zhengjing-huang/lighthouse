@@ -65,6 +65,12 @@ function isVisible(imageRect, viewportDimensions) {
  * @return {boolean}
  */
 function isCandidate(image) {
+  /** image-rendering solution for pixel art scaling.
+   * https://developer.mozilla.org/en-US/docs/Games/Techniques/Crisp_pixel_art_look
+  */
+  const artisticImageRenderingValues = ['pixelated', 'crisp-edges'];
+  // https://html.spec.whatwg.org/multipage/images.html#pixel-density-descriptor
+  const densityDescriptorRegex = / \d+(\.\d+)?x/;
   if (image.displayedWidth <= 1 || image.displayedHeight <= 1) {
     return false;
   }
@@ -77,13 +83,15 @@ function isCandidate(image) {
   if (image.isCss) {
     return false;
   }
-  if (image.usesObjectFit) {
+  if (image.cssComputedObjectFit !== 'fill') {
     return false;
   }
-  if (image.usesPixelArtScaling) {
+  // Check if pixel art scaling is used.
+  if (artisticImageRenderingValues.includes(image.cssComputedImageRendering)) {
     return false;
   }
-  if (image.usesSrcSetDensityDescriptor) {
+  // Check if density descriptor is used.
+  if (densityDescriptorRegex.test(image.srcset)) {
     return false;
   }
   return true;
@@ -167,7 +175,8 @@ function expectedImageSize(displayedWidth, displayedHeight, DPR) {
  */
 function deduplicateResultsByUrl(results) {
   results.sort((a, b) => a.url === b.url ? 0 : (a.url < b. url ? -1 : 1));
-  const deduplicated = /** @type {Result[]} */ ([]);
+  /** @type {Result[]} */
+  const deduplicated = [];
   for (const r of results) {
     const previousResult = deduplicated[deduplicated.length - 1];
     if (previousResult && previousResult.url === r.url) {

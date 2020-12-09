@@ -6,11 +6,20 @@
 // @ts-nocheck
 'use strict';
 
-/* global window document Node ShadowRoot */
-
 /**
+ * @fileoverview
  * Helper functions that are passed by `toString()` by Driver to be evaluated in target page.
+ *
+ * Important: this module should only be imported like this:
+ *     const pageFunctions = require('...');
+ * Never like this:
+ *     const {justWhatINeed} = require('...');
+ * Otherwise, minification will mangle the variable names and break usage.
  */
+
+/** @typedef {HTMLElementTagNameMap & {[id: string]: HTMLElement}} HTMLElementByTagName */
+
+/* global window document Node ShadowRoot */
 
 /**
  * The `exceptionDetails` provided by the debugger protocol does not contain the useful
@@ -78,9 +87,10 @@ function checkTimeSinceLastLongTask() {
 }
 
 /**
- * @param {string=} selector Optional simple CSS selector to filter nodes on.
+ * @template {string} T
+ * @param {T} selector Optional simple CSS selector to filter nodes on.
  *     Combinators are not supported.
- * @return {Array<HTMLElement>}
+ * @return {Array<HTMLElementByTagName[T]>}
  */
 /* istanbul ignore next */
 function getElementsInDocument(selector) {
@@ -359,7 +369,7 @@ function isPositionFixed(element) {
  * Generate a human-readable label for the given element, based on end-user facing
  * strings like the innerText or alt attribute.
  * Falls back to the tagName if no useful label is found.
- * @param {HTMLElement} node
+ * @param {Element} node
  * @return {string|null}
  */
 /* istanbul ignore next */
@@ -375,7 +385,9 @@ function getNodeLabel(node) {
     if (str.length <= maxLength) {
       return str;
     }
-    return str.slice(0, maxLength - 1) + '…';
+    // Take advantage of string iterator multi-byte character awareness.
+    // Regular `.slice` will ignore unicode character boundaries and lead to malformed text.
+    return Array.from(str).slice(0, maxLength - 1).join('') + '…';
   }
   const tagName = node.tagName.toLowerCase();
   // html and body content is too broad to be useful, since they contain all page content
@@ -388,7 +400,7 @@ function getNodeLabel(node) {
       // E.g. if an a tag contains an image but no text we want the image alt/aria-label attribute.
       const nodeToUseForLabel = node.querySelector('[alt], [aria-label]');
       if (nodeToUseForLabel) {
-        return getNodeLabel(/** @type {HTMLElement} */ (nodeToUseForLabel));
+        return getNodeLabel(nodeToUseForLabel);
       }
     }
   }
@@ -501,6 +513,7 @@ module.exports = {
   wrapRuntimeEvalErrorInBrowserString: wrapRuntimeEvalErrorInBrowser.toString(),
   registerPerformanceObserverInPageString: registerPerformanceObserverInPage.toString(),
   checkTimeSinceLastLongTaskString: checkTimeSinceLastLongTask.toString(),
+  getElementsInDocument,
   getElementsInDocumentString: getElementsInDocument.toString(),
   getOuterHTMLSnippetString: getOuterHTMLSnippet.toString(),
   getOuterHTMLSnippet: getOuterHTMLSnippet,

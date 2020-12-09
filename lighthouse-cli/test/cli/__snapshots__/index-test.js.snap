@@ -154,6 +154,9 @@ Object {
       "path": "third-party-summary",
     },
     Object {
+      "path": "third-party-facades",
+    },
+    Object {
       "path": "largest-contentful-paint-element",
     },
     Object {
@@ -176,6 +179,9 @@ Object {
     },
     Object {
       "path": "preload-lcp-image",
+    },
+    Object {
+      "path": "full-page-screenshot",
     },
     Object {
       "path": "manual/pwa-cross-browser",
@@ -1016,6 +1022,11 @@ Object {
         },
         Object {
           "group": "diagnostics",
+          "id": "third-party-facades",
+          "weight": 0,
+        },
+        Object {
+          "group": "diagnostics",
           "id": "largest-contentful-paint-element",
           "weight": 0,
         },
@@ -1429,6 +1440,9 @@ Object {
         },
         Object {
           "path": "source-maps",
+        },
+        Object {
+          "path": "full-page-screenshot",
         },
       ],
       "loadFailureMode": "fatal",
