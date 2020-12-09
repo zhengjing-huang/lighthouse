@@ -176,11 +176,11 @@ declare global {
       /** The throttling config settings. */
       throttling?: ThrottlingSettings;
       /** A user-facing string to display in Runtime Settings for the Device row */
-      providedDeviceString?: string;
+      providedDeviceString?: string | null;
       /** A user-facing string to display in Runtime Settings for the Network throttling row */
-      providedNetworkThrottlingString?: string;
+      providedNetworkThrottlingString?: string | null;
       /** A user-facing string to display in Runtime Settings for the CPU throttling row */
-      providedCPUThrottlingString?: string;
+      providedCPUThrottlingString?: string | null;
       /** If present, the run should only conduct this list of audits. */
       onlyAudits?: string[] | null;
       /** If present, the run should only conduct this list of categories. */
