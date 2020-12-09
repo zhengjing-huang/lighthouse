@@ -15,7 +15,7 @@ jobs:
           node-version: 12.x
       - run: yarn
 
-      - name: bash $GITHUB_WORKSPACE/.github/scripts/bump-nightly-version.sh
+      - run: bash $GITHUB_WORKSPACE/.github/scripts/bump-nightly-version.sh
       - uses: JS-DevTools/npm-publish@v1
         with:
           dry-run: true
