@@ -8,6 +8,6 @@
 
 set -euxo pipefail
 
-DATE=$(date '+%Y-%m-%d')
+DATE=$(date '+%Y%m%d')
 PATCH=$(node -e "console.log(require('./package.json').version)")
 node lighthouse-core/scripts/release/bump-versions.js "$PATCH-dev.$DATE"
