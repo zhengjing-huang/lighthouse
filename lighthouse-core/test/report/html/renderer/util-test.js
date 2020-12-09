@@ -34,9 +34,10 @@ describe('util helpers', () => {
   });
 
   it('builds device emulation string', () => {
-    const get = opts => Util.getEmulationDescriptions(opts).deviceEmulation;
-    assert.equal(get({formFactor: 'mobile'}), 'Emulated Moto G4');
-    assert.equal(get({formFactor: 'desktop'}), 'Emulated Desktop');
+    const get = opts => Util.getEmulationDescriptions(opts).device;
+    assert.equal(get({screenEmulation: false, formFactor: 'mobile'}), 'No emulation');
+    assert.equal(get({screenEmulation: true, formFactor: 'mobile'}), 'Emulated Mobile');
+    assert.equal(get({screenEmulation: true, formFactor: 'desktop'}), 'Emulated Desktop');
   });
 
   it('builds throttling strings when provided', () => {
@@ -75,6 +76,23 @@ describe('util helpers', () => {
     assert.equal(descriptions.networkThrottling, '150\xa0ms TCP RTT, 1,600\xa0Kbps throughput (Simulated)');
     assert.equal(descriptions.cpuThrottling, '2x slowdown (Simulated)');
   });
+
+  it('uses provided strings string', () => {
+    const clonedSampleResult = JSON.parse(JSON.stringify(sampleResult));
+    clonedSampleResult.configSettings.providedDeviceString = 'WebPageTest device';
+    clonedSampleResult.configSettings.providedNetworkThrottlingString = 'Packet-level throtting';
+    clonedSampleResult.configSettings.providedCPUThrottlingString = 'cgroups cpu throttling';
+
+    const descs = opts => Util.getEmulationDescriptions(opts);
+    expect(descs(clonedSampleResult.configSettings)).toMatchInlineSnapshot(`
+      Object {
+        "cpuThrottling": "cgroups cpu throttling",
+        "device": "WebPageTest device",
+        "networkThrottling": "Packet-level throtting",
+      }
+    `);
+  });
+
 
   describe('#prepareReportResult', () => {
     describe('backward compatibility', () => {

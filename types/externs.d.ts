@@ -175,6 +175,12 @@ declare global {
       throttlingMethod?: 'devtools'|'simulate'|'provided';
       /** The throttling config settings. */
       throttling?: ThrottlingSettings;
+      /** A user-facing string to display in Runtime Settings for the Device row */
+      providedDeviceString?: string;
+      /** A user-facing string to display in Runtime Settings for the Network throttling row */
+      providedNetworkThrottlingString?: string;
+      /** A user-facing string to display in Runtime Settings for the CPU throttling row */
+      providedCPUThrottlingString?: string;
       /** If present, the run should only conduct this list of audits. */
       onlyAudits?: string[] | null;
       /** If present, the run should only conduct this list of categories. */

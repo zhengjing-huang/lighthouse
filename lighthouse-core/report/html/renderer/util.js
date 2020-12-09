@@ -376,7 +376,7 @@ class Util {
     return [
       {
         name: Util.i18n.strings.runtimeSettingsDevice,
-        description: emulationDesc.deviceEmulation,
+        description: emulationDesc.device,
       },
       {
         name: Util.i18n.strings.runtimeSettingsNetworkThrottling,
@@ -391,7 +391,7 @@ class Util {
 
   /**
    * @param {LH.Config.Settings} settings
-   * @return {{deviceEmulation: string, networkThrottling: string, cpuThrottling: string}}
+   * @return {{device: string, networkThrottling: string, cpuThrottling: string}}
    */
   static getEmulationDescriptions(settings) {
     let cpuThrottling;
@@ -424,13 +424,23 @@ class Util {
         networkThrottling = Util.i18n.strings.runtimeUnknown;
     }
 
-    // TODO(paulirish): revise Runtime Settings strings: https://github.com/GoogleChrome/lighthouse/pull/11796
-    const deviceEmulation = settings.formFactor === 'mobile'
+    let device = !settings.screenEmulation ? Util.i18n.strings.runtimeNoEmulation :
+     settings.formFactor === 'mobile'
       ? Util.i18n.strings.runtimeMobileEmulation
       : Util.i18n.strings.runtimeDesktopEmulation;
 
+    if (settings.providedDeviceString) {
+      device = settings.providedDeviceString;
+    }
+    if (settings.providedNetworkThrottlingString) {
+      networkThrottling = settings.providedNetworkThrottlingString;
+    }
+    if (settings.providedCPUThrottlingString) {
+      cpuThrottling = settings.providedCPUThrottlingString;
+    }
+
     return {
-      deviceEmulation,
+      device,
       cpuThrottling,
       networkThrottling,
     };
@@ -603,8 +613,8 @@ Util.UIStrings = {
 
   /** Descriptive explanation for emulation setting when no device emulation is set. */
   runtimeNoEmulation: 'No emulation',
-  /** Descriptive explanation for emulation setting when emulating a Moto G4 mobile device. */
-  runtimeMobileEmulation: 'Emulated Moto G4',
+  /** Descriptive explanation for emulation setting when emulating a mobile device. */
+  runtimeMobileEmulation: 'Emulated Mobile',
   /** Descriptive explanation for emulation setting when emulating a generic desktop form factor, as opposed to a mobile-device like form factor. */
   runtimeDesktopEmulation: 'Emulated Desktop',
   /** Descriptive explanation for a runtime setting that is set to an unknown value. */
