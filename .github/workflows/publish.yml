@@ -15,7 +15,7 @@ jobs:
       - run: yarn
 
       - run: bash $GITHUB_WORKSPACE/.github/scripts/bump-nightly-version.sh
-      - uses: JS-DevTools/npm-publish@v1
+      - uses: JS-DevTools/npm-publish@8f9874
         with:
           tag: next
           token: ${{ secrets.NPM_TOKEN }}
