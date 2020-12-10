@@ -12,7 +12,8 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: 12.x
-      - run: yarn
+      - run: yarn --frozen-lockfile
+        working-directory: ${{ github.workspace }}/lighthouse
 
       - run: bash $GITHUB_WORKSPACE/.github/scripts/bump-nightly-version.sh
       - run: npm publish --tag next
