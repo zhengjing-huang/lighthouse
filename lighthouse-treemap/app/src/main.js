@@ -7,14 +7,14 @@
 
 /* eslint-env browser */
 
-/* globals webtreemap Util */
+/* globals webtreemap TreemapUtil */
 
 /** @type {TreemapViewer} */
 let treemapViewer;
 
 class TreemapViewer {
   /**
-   * @param {Treemap.Options} options
+   * @param {LH.Treemap.Options} options
    * @param {HTMLElement} el
    */
   constructor(options, el) {
@@ -27,25 +27,25 @@ class TreemapViewer {
     /** @type {import('../../../lighthouse-core/audits/script-treemap-data').TreemapData} */
     const scriptRootNodes = treemapDebugData.treemapData;
 
-    /** @type {WeakMap<Treemap.Node, Treemap.RootNodeContainer>} */
+    /** @type {WeakMap<LH.Treemap.Node, LH.Treemap.RootNodeContainer>} */
     this.nodeToRootNodeMap = new WeakMap();
 
-    /** @type {{[group: string]: Treemap.RootNodeContainer[]}} */
+    /** @type {{[group: string]: LH.Treemap.RootNodeContainer[]}} */
     this.rootNodesByGroup = {
       scripts: scriptRootNodes,
     };
 
     for (const rootNodes of Object.values(this.rootNodesByGroup)) {
       for (const rootNode of rootNodes) {
-        Util.dfs(rootNode.node, node => this.nodeToRootNodeMap.set(node, rootNode));
+        TreemapUtil.dfs(rootNode.node, node => this.nodeToRootNodeMap.set(node, rootNode));
       }
     }
 
-    /** @type {Treemap.Node} */
+    /** @type {LH.Treemap.Node} */
     this.currentRootNode; // eslint-disable-line no-unused-expressions
     this.documentUrl = options.lhr.requestedUrl;
     this.el = el;
-    this.getHue = Util.stableHasher(Util.COLOR_HUES);
+    this.getHue = TreemapUtil.stableHasher(TreemapUtil.COLOR_HUES);
 
     this.createHeader();
     this.show();
@@ -53,9 +53,9 @@ class TreemapViewer {
   }
 
   createHeader() {
-    Util.find('.lh-header--url').textContent = this.documentUrl;
-    Util.find('.lh-header--size').textContent =
-      Util.formatBytes(this.createRootNodeForGroup('scripts').resourceBytes);
+    TreemapUtil.find('.lh-header--url').textContent = this.documentUrl;
+    TreemapUtil.find('.lh-header--size').textContent =
+      TreemapUtil.formatBytes(this.createRootNodeForGroup('scripts').resourceBytes);
   }
 
   initListeners() {
@@ -132,7 +132,7 @@ class TreemapViewer {
     const rootNodes = this.rootNodesByGroup[group];
     renderViewModeOptions(rootNodes);
 
-    Util.dfs(this.currentRootNode, node => {
+    TreemapUtil.dfs(this.currentRootNode, node => {
       // @ts-ignore: webtreemap will store `dom` on the data to speed up operations.
       // However, when we change the underlying data representation, we need to delete
       // all the cached DOM elements. Otherwise, the rendering will be incorrect when,
@@ -157,21 +157,21 @@ class TreemapViewer {
       // showNode: node => node.resourceBytes > 100 * 100,
       // lowerBound: 0.2,
     });
-    Util.find('.webtreemap-node').classList.add('webtreemap-node--root');
+    TreemapUtil.find('.webtreemap-node').classList.add('webtreemap-node--root');
     this.updateColors();
   }
 
   /**
    * Creates the header text for each node in webtreemap.
-   * @param {Treemap.Node} node
+   * @param {LH.Treemap.Node} node
    */
   makeCaption(node) {
     const size = node.resourceBytes;
     const total = this.currentRootNode.resourceBytes;
 
     const parts = [
-      Util.elide(node.name, 60),
-      `${Util.formatBytes(size)} (${Math.round(size / total * 100)}%)`,
+      TreemapUtil.elide(node.name, 60),
+      `${TreemapUtil.formatBytes(size)} (${Math.round(size / total * 100)}%)`,
     ];
 
     // Only add label for bytes on the root node.
@@ -183,7 +183,7 @@ class TreemapViewer {
   }
 
   updateColors() {
-    Util.dfs(this.currentRootNode, node => {
+    TreemapUtil.dfs(this.currentRootNode, node => {
       // Color a root node and all children the same color.
       const rootNode = this.nodeToRootNodeMap.get(node);
       const hueKey = rootNode ? rootNode.name : node.name;
@@ -195,7 +195,7 @@ class TreemapViewer {
       if (hue !== undefined) {
         const sat = 60;
         const lum = 90;
-        backgroundColor = Util.hsl(hue, sat, Math.round(lum));
+        backgroundColor = TreemapUtil.hsl(hue, sat, Math.round(lum));
         color = lum > 50 ? 'black' : 'white';
       } else {
         // Ran out of colors.
@@ -212,10 +212,10 @@ class TreemapViewer {
 }
 
 /**
- * @param {Treemap.RootNodeContainer[]} rootNodes
+ * @param {LH.Treemap.RootNodeContainer[]} rootNodes
  */
 function renderViewModeOptions(rootNodes) {
-  const viewModesPanel = Util.find('.panel--modals');
+  const viewModesPanel = TreemapUtil.find('.panel--modals');
   viewModesPanel.innerHTML = '';
 
   /**
@@ -223,12 +223,12 @@ function renderViewModeOptions(rootNodes) {
    * @param {number} bytes
    */
   function makeViewMode(label, bytes) {
-    const viewModeEl = Util.createChildOf(viewModesPanel, 'div', 'view-mode');
+    const viewModeEl = TreemapUtil.createChildOf(viewModesPanel, 'div', 'view-mode');
     viewModeEl.classList.add('view-mode--active');
 
-    Util.createChildOf(viewModeEl, 'span').textContent = label;
-    Util.createChildOf(viewModeEl, 'span', 'lh-text-dim').textContent =
-    ` (${Util.formatBytes(bytes)})`;
+    TreemapUtil.createChildOf(viewModeEl, 'span').textContent = label;
+    TreemapUtil.createChildOf(viewModeEl, 'span', 'lh-text-dim').textContent =
+    ` (${TreemapUtil.formatBytes(bytes)})`;
 
     viewModeEl.addEventListener('click', () => {
       treemapViewer.show();
@@ -237,7 +237,7 @@ function renderViewModeOptions(rootNodes) {
 
   let bytes = 0;
   for (const rootNode of rootNodes) {
-    Util.dfs(rootNode.node, node => {
+    TreemapUtil.dfs(rootNode.node, node => {
       // Only consider leaf nodes.
       if (node.children) return;
 
@@ -249,45 +249,41 @@ function renderViewModeOptions(rootNodes) {
 
 /**
  * Allows for saving the document and loading with data intact.
+ * @param {LH.Treemap.Options} options
  */
-function injectOptions() {
-  // @ts-expect-error
-  if (!window.__injected) return;
+function injectOptions(options) {
+  if (window.__treemapOptions) return;
 
   const scriptEl = document.createElement('script');
-  scriptEl.innerHTML = `
-    window.__TREEMAP_OPTIONS = ${JSON.stringify(window.__TREEMAP_OPTIONS)};
-    window.__injected = true;
+  scriptEl.textContent = `
+    window.__treemapOptions = ${JSON.stringify(options)};
   `;
   document.head.append(scriptEl);
 }
 
 /**
- * @param {Treemap.Options} options
+ * @param {LH.Treemap.Options} options
  */
 function init(options) {
-  treemapViewer = new TreemapViewer(options, Util.find('.panel--treemap'));
+  treemapViewer = new TreemapViewer(options, TreemapUtil.find('.panel--treemap'));
 
-  window.__TREEMAP_OPTIONS = options;
-  injectOptions();
-
-  if (window.ga) {
-    // TODO what are these?
-    // window.ga('send', 'event', 'treemap', 'open in viewer');
-    window.ga('send', 'event', 'report', 'open in viewer');
-  }
+  injectOptions(options);
 
   // eslint-disable-next-line no-console
-  console.log('window.__TREEMAP_OPTIONS', window.__TREEMAP_OPTIONS);
+  console.log('window.__treemapOptions', window.__treemapOptions);
+}
 
-  window.__treemapViewer = treemapViewer;
-  // eslint-disable-next-line no-console
-  console.log('window.__treemapViewer', window.__treemapViewer);
+/**
+ * @param {string} message
+ */
+function showError(message) {
+  document.body.textContent = message;
 }
 
 async function main() {
-  if (window.__TREEMAP_OPTIONS) {
-    init(window.__TREEMAP_OPTIONS);
+  if (window.__treemapOptions) {
+    // Prefer the hardcoded options from a saved HTML file above all.
+    init(window.__treemapOptions);
   } else if (new URLSearchParams(window.location.search).has('debug')) {
     const response = await fetch('debug.json');
     init(await response.json());
@@ -295,12 +291,13 @@ async function main() {
     window.addEventListener('message', e => {
       if (e.source !== self.opener) return;
 
-      /** @type {Treemap.Options} */
+      /** @type {LH.Treemap.Options} */
       const options = e.data;
       const {lhr} = options;
-      if (!lhr) return;
+      if (!lhr) return showError('Error: Invalid options');
+
       const documentUrl = lhr.requestedUrl;
-      if (!documentUrl) return;
+      if (!documentUrl) return showError('Error: Invalid options');
 
       init(options);
     });

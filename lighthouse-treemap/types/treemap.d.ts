@@ -1,25 +1,11 @@
-// import _Util2 = require('webtreemap-cdt'); // TODO: types.
-import _Util = require('../app/src/util.js');
-import {RootNodeContainer as _RootNodeContainer} from '../../lighthouse-core/audits/script-treemap-data';
-import {Node as _Node} from '../../lighthouse-core/audits/script-treemap-data';
-import '../../types/lhr';
-import '../../types/audit-details';
+import _TreemapUtil = require('../app/src/util.js');
 
 declare global {
-  module Treemap {
-    interface Options {
-      lhr: LH.Result;
-    }
-
-    type RootNodeContainer = _RootNodeContainer;
-    type Node = _Node;
-  }
-
   interface WebTreeMapOptions {
     padding: [number, number, number, number];
     spacing: number;
-    caption(node: Treemap.Node): string;
-    showNode?(node: Treemap.Node): boolean;
+    caption(node: LH.Treemap.Node): string;
+    showNode?(node: LH.Treemap.Node): boolean;
   }
 
   var webtreemap: {
@@ -27,11 +13,10 @@ declare global {
     sort(data: any): void;
   };
 
-  var Util: typeof _Util;
+  var TreemapUtil: typeof _TreemapUtil;
 
   interface Window {
-    __treemapViewer: TreemapViewer;
-    __TREEMAP_OPTIONS?: Treemap.Options;
+    __treemapOptions?: LH.Treemap.Options;
   }
 }
 

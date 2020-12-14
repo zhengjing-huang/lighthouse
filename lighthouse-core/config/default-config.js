@@ -138,7 +138,6 @@ const defaultConfig = {
       'css-usage',
       'js-usage',
       'viewport-dimensions',
-      'runtime-exceptions',
       'console-messages',
       'anchor-elements',
       'image-elements',
@@ -164,6 +163,7 @@ const defaultConfig = {
       'trace-elements',
       'inspector-issues',
       'source-maps',
+      'full-page-screenshot',
     ],
   },
   {
@@ -179,10 +179,10 @@ const defaultConfig = {
     passName: 'redirectPass',
     loadFailureMode: 'warn',
     // Speed up the redirect pass by blocking stylesheets, fonts, and images
-    blockedUrlPatterns: ['*.css', '*.jpg', '*.jpeg', '*.png', '*.gif', '*.svg', '*.ttf', '*.woff', '*.woff2'],
+    // TODO: restore blocked *.css when https://github.com/GoogleChrome/lighthouse/issues/11803 is resolved.
+    blockedUrlPatterns: ['*.jpg', '*.jpeg', '*.png', '*.gif', '*.svg', '*.ttf', '*.woff', '*.woff2'],
     gatherers: [
       'http-redirect',
-      'html-without-javascript',
     ],
   }],
   audits: [
@@ -191,11 +191,9 @@ const defaultConfig = {
     'service-worker',
     'works-offline',
     'viewport',
-    'without-javascript',
     'metrics/first-contentful-paint',
     'metrics/largest-contentful-paint',
     'metrics/first-meaningful-paint',
-    'load-fast-enough-for-pwa',
     'metrics/speed-index',
     'screenshot-thumbnails',
     'final-screenshot',
@@ -236,6 +234,7 @@ const defaultConfig = {
     'timing-budget',
     'resource-summary',
     'third-party-summary',
+    'third-party-facades',
     'largest-contentful-paint-element',
     'layout-shift-elements',
     'long-tasks',
@@ -243,6 +242,8 @@ const defaultConfig = {
     'non-composited-animations',
     'unsized-images',
     'valid-source-maps',
+    'preload-lcp-image',
+    'full-page-screenshot',
     'manual/pwa-cross-browser',
     'manual/pwa-page-transitions',
     'manual/pwa-each-page-has-url',
@@ -318,6 +319,7 @@ const defaultConfig = {
     'dobetterweb/dom-size',
     'dobetterweb/external-anchors-use-rel-noopener',
     'dobetterweb/geolocation-on-start',
+    'dobetterweb/inspector-issues',
     'dobetterweb/no-document-write',
     'dobetterweb/no-vulnerable-libraries',
     'dobetterweb/js-libraries',
@@ -455,6 +457,7 @@ const defaultConfig = {
         {id: 'efficient-animated-content', weight: 0, group: 'load-opportunities'},
         {id: 'duplicated-javascript', weight: 0, group: 'load-opportunities'},
         {id: 'legacy-javascript', weight: 0, group: 'load-opportunities'},
+        {id: 'preload-lcp-image', weight: 0, group: 'load-opportunities'},
         {id: 'total-byte-weight', weight: 0, group: 'diagnostics'},
         {id: 'uses-long-cache-ttl', weight: 0, group: 'diagnostics'},
         {id: 'dom-size', weight: 0, group: 'diagnostics'},
@@ -467,6 +470,7 @@ const defaultConfig = {
         {id: 'timing-budget', weight: 0, group: 'budgets'},
         {id: 'resource-summary', weight: 0, group: 'diagnostics'},
         {id: 'third-party-summary', weight: 0, group: 'diagnostics'},
+        {id: 'third-party-facades', weight: 0, group: 'diagnostics'},
         {id: 'largest-contentful-paint-element', weight: 0, group: 'diagnostics'},
         {id: 'layout-shift-elements', weight: 0, group: 'diagnostics'},
         {id: 'uses-passive-event-listeners', weight: 0, group: 'diagnostics'},
@@ -572,6 +576,7 @@ const defaultConfig = {
         {id: 'deprecations', weight: 1, group: 'best-practices-general'},
         {id: 'errors-in-console', weight: 1, group: 'best-practices-general'},
         {id: 'valid-source-maps', weight: 0, group: 'best-practices-general'},
+        {id: 'inspector-issues', weight: 1, group: 'best-practices-general'},
       ],
     },
     'seo': {
@@ -603,7 +608,6 @@ const defaultConfig = {
       manualDescription: str_(UIStrings.pwaCategoryManualDescription),
       auditRefs: [
         // Fast and Reliable
-        {id: 'load-fast-enough-for-pwa', weight: 7, group: 'pwa-fast-reliable'},
         {id: 'works-offline', weight: 5, group: 'pwa-fast-reliable'},
         {id: 'offline-start-url', weight: 1, group: 'pwa-fast-reliable'},
         // Installable
@@ -616,7 +620,6 @@ const defaultConfig = {
         {id: 'themed-omnibox', weight: 1, group: 'pwa-optimized'},
         {id: 'content-width', weight: 1, group: 'pwa-optimized'},
         {id: 'viewport', weight: 2, group: 'pwa-optimized'},
-        {id: 'without-javascript', weight: 1, group: 'pwa-optimized'},
         {id: 'apple-touch-icon', weight: 1, group: 'pwa-optimized'},
         {id: 'maskable-icon', weight: 1, group: 'pwa-optimized'},
         // Manual audits

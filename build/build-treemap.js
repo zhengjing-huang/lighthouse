@@ -5,6 +5,7 @@
  */
 'use strict';
 
+const fs = require('fs');
 const GhPagesApp = require('./gh-pages-app.js');
 
 /**
@@ -19,10 +20,10 @@ async function run() {
       {path: 'styles/*'},
     ],
     javascripts: [
+      fs.readFileSync(require.resolve('webtreemap-cdt'), 'utf8'),
       {path: 'src/*'},
     ],
     assets: [
-      {path: 'images/**/*'},
       {path: 'debug.json'},
     ],
   });

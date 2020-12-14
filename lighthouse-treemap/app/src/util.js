@@ -12,10 +12,10 @@
 const KB = 1024;
 const MB = KB * KB;
 
-class Util {
+class TreemapUtil {
   /**
-   * @param {Treemap.Node} node
-   * @param {(node: Treemap.Node, path: string[]) => void} fn
+   * @param {LH.Treemap.Node} node
+   * @param {(node: LH.Treemap.Node, path: string[]) => void} fn
    * @param {string[]=} path
    */
   static dfs(node, fn, path) {
@@ -26,7 +26,7 @@ class Util {
     if (!node.children) return;
 
     for (const child of node.children) {
-      Util.dfs(child, fn, [...path]);
+      TreemapUtil.dfs(child, fn, [...path]);
     }
   }
 
@@ -132,7 +132,7 @@ class Util {
    * @param {string} unit
    */
   static format(value, unit) {
-    if (unit === 'bytes') return Util.formatBytes(value);
+    if (unit === 'bytes') return TreemapUtil.formatBytes(value);
     if (unit === 'time') return `${value} ms`;
     return `${value} ${unit}`;
   }
@@ -249,17 +249,17 @@ class Util {
 
 // From DevTools:
 // https://cs.chromium.org/chromium/src/third_party/devtools-frontend/src/front_end/quick_open/CommandMenu.js?l=255&rcl=ad5c586c30a6bc55962b7a96b0533911c86bd4fc
-Util.COLOR_HUES = [
+TreemapUtil.COLOR_HUES = [
   '#F44336', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5', '#03A9F4',
   '#00BCD4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39', '#FFC107',
   '#FF9800', '#FF5722', '#795548', '#9E9E9E', '#607D8B',
 ].map(hex => {
   const hexParts = hex.slice(1).split(/(..)/).filter(Boolean);
   const [r, g, b] = hexParts.map(part => parseInt(part, 16));
-  return Util.rgb2hue(r, g, b);
+  return TreemapUtil.rgb2hue(r, g, b);
 });
 
 // node export for testing.
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = Util;
+  module.exports = TreemapUtil;
 }
