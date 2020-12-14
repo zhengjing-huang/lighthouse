@@ -198,15 +198,7 @@ class ScriptTreemapDataAudit extends Audit {
             unusedBytes: unusedJavascriptSummary.sourcesWastedBytes[source],
           };
 
-          // ModuleDuplication uses keys without the source root prepended, but
-          // bundle.sizes uses keys with it prepended, so we remove the source root before
-          // using it with duplicationByPath.
-          let sourceWithoutSourceRoot = source;
-          if (bundle.rawMap.sourceRoot && source.startsWith(bundle.rawMap.sourceRoot)) {
-            sourceWithoutSourceRoot = source.replace(bundle.rawMap.sourceRoot, '');
-          }
-
-          const key = ModuleDuplication.normalizeSource(sourceWithoutSourceRoot);
+          const key = ModuleDuplication.normalizeSource(source);
           if (duplicationByPath.has(key)) sourceData.duplicatedNormalizedModuleName = key;
 
           sourcesData[source] = sourceData;
