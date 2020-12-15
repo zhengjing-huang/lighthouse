@@ -166,6 +166,11 @@ class TreemapUtil {
   }
 
   /**
+   * Given a list of items, return a function (a hasher) that will map keys to an item.
+   * When a key is seen for the first time, the item returned is cached and will always
+   * be returned for the same key.
+   * The hash function is stable and deterministic, so the same key->item mapping will be
+   * produced given the same call order.
    * @template T
    * @param {T[]} items
    * @return {(key: string) => T|undefined}
@@ -185,10 +190,10 @@ class TreemapUtil {
 
       // Select a random item using a stable hash.
       const hash = [...key].reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      const [assignedColor] = items.splice(hash % items.length, 1);
-      assignedItems.set(key, assignedColor);
+      const [assignedItem] = items.splice(hash % items.length, 1);
+      assignedItems.set(key, assignedItem);
 
-      return assignedColor;
+      return assignedItem;
     };
   }
 
