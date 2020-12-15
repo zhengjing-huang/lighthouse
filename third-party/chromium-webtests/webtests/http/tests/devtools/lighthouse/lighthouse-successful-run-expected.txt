@@ -203,7 +203,7 @@ Computing artifact: UserTimings
 Auditing: Avoid chaining critical requests
 Computing artifact: CriticalRequestChains
 Auditing: Avoid multiple page redirects
-Auditing: Web app manifest meets the installability requirements
+Auditing: Web app manifest and service worker meet the installability requirements
 Computing artifact: ManifestValues
 Auditing: Provides a valid `apple-touch-icon`
 Auditing: Configured for a custom splash screen
@@ -565,7 +565,7 @@ viewport-ad-density: notApplicable
 visual-order-follows-dom: manual
 works-offline: fail
 
-# of .lh-audit divs: 156
+# of .lh-audit divs: 155
 
 .lh-audit divs:
 accesskeys
@@ -641,7 +641,6 @@ inspector-issues
 installable-manifest
 interactive-element-affordance
 is-crawlable
-is-on-https
 is-on-https
 js-libraries
 label
