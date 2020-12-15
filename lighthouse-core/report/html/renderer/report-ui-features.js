@@ -27,9 +27,6 @@
 
 /** @typedef {import('./dom')} DOM */
 
-const VIEWER_ORIGIN = 'http://localhost:8000';
-const TREEMAP_URL = `${VIEWER_ORIGIN}/treemap/`;
-
 /**
  * @param {HTMLTableElement} tableEl
  * @return {Array<HTMLElement>}
@@ -491,20 +488,6 @@ class ReportUIFeatures {
 
   _print() {
     self.print();
-  }
-
-  _openTreemap() {
-    const treemapDebugData = /** @type {LH.Audit.Details.DebugData} */ (
-      this.json.audits['script-treemap-data'].details);
-    if (!treemapDebugData) return;
-
-    const windowName = `treemap-${this.json.requestedUrl}`;
-    // TODO how to use this type ...?
-    /** @type {LH.Treemap.Options} */
-    const treemapOptions = {
-      lhr: this.json,
-    };
-    ReportUIFeatures.openTabAndSendData(treemapOptions, TREEMAP_URL, windowName);
   }
 
   /**
