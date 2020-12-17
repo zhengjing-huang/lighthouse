@@ -13,12 +13,16 @@ describe('installabilityErrors', () => {
   let chromiumErrorIds;
 
   beforeAll(async () => {
+    debugger;
     const installableLoggingGitTilesUrl =
-      'https://chromium.googlesource.com/chromium/src/+/master/chrome/browser/installable/installable_logging.cc?format=TEXT';
-    const base64 = await fetch(installableLoggingGitTilesUrl).then(r => r.text());
-
-    let buff = Buffer.from(base64, 'base64');
-    let text = buff.toString('utf-8');
+      'https://chromium.googlesource.com/chromium/src/+/master/components/webapps/installable/installable_logging.cc?format=TEXT';
+    const resp = await fetch(installableLoggingGitTilesUrl);
+    if (!resp.ok) {
+      throw new Error(`Chromium source fetch failed: ${resp.status} ${resp.statusText}`);
+    }
+    const base64 = await resp.text();
+    const buff = Buffer.from(base64, 'base64');
+    const text = buff.toString('utf-8');
 
     // Apply some *beautiful* regexes to parse the C++ of https://chromium.googlesource.com/chromium/src/+/master/chrome/browser/installable/installable_logging.cc
     const handledErrorConsts = [...text.matchAll(/error_id = (k.*?);/g)].map(([_, match]) => match);
@@ -34,11 +38,11 @@ describe('installabilityErrors', () => {
     chromiumErrorIds = handledErrorConsts.map(varName => {
       if (!errorConstsToIdsDict[varName]) throw new Error(`Error const (${varName}) not found!`);
       return errorConstsToIdsDict[varName];
-    });
+    }).sort();
   });
 
   it('should notify us if something changed', () => {
-    expect(chromiumErrorIds.sort()).toMatchInlineSnapshot(`
+    expect(chromiumErrorIds).toMatchInlineSnapshot(`
       Array [
         "already-installed",
         "cannot-download-icon",
@@ -63,14 +67,16 @@ describe('installabilityErrors', () => {
         "prefer-related-applications-only-beta-stable",
         "start-url-not-valid",
         "url-not-supported-for-webapk",
+        "warn-not-offline-capable",
       ]
     `);
   });
 
   it('are each handled explicitly in the gatherer', () => {
-    // expect.arrayContaining is semantically great, but the output sucks
-    for (const chromiumErrorId of chromiumErrorIds) {
-      expect(Object.keys(InstallableManifestAudit.UIStrings)).toContain(chromiumErrorId);
-    }
+    const errorStrings = Object.keys(InstallableManifestAudit.UIStrings)
+      .filter(key => chromiumErrorIds.includes(key))
+      .sort();
+    expect(errorStrings).toEqual(chromiumErrorIds);
+
   });
 });

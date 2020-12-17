@@ -5,7 +5,6 @@
  */
 'use strict';
 
-const assert = require('assert').strict;
 const fs = require('fs');
 const fetch = require('node-fetch');
 
@@ -24,7 +23,8 @@ describe('issueAdded types', () => {
     inspectorIssueDetailsTypes = json.domains
       .find(d => d.domain === 'Audits')
       .types.find(t => t.id === 'InspectorIssueDetails')
-      .properties.map(t => t.name);
+      .properties.map(t => t.name)
+      .sort();
   });
 
   it('should notify us if something changed', () => {
@@ -40,8 +40,15 @@ describe('issueAdded types', () => {
   });
 
   it('are each handled explicitly in the gatherer', () => {
-    for (const inspectorIssueDetailsType of inspectorIssueDetailsTypes) {
-      expect(inspectorIssuesGathererSource.includes(inspectorIssueDetailsType)).toBeTruthy();
-    }
+    // Regex relies on the typecasts
+    const sourceTypeMatches = inspectorIssuesGathererSource.matchAll(/LH\.Crdp\.Audits\.(.*?Details)>/g);
+
+    const sourceTypeMatchIds = [...sourceTypeMatches]
+        .map(match => match[1])
+        // mapping TS type casing (TitleCase) to protocol types (camelCase)
+        .map(id => `${id.slice(0, 1).toLowerCase()}${id.slice(1)}`)
+        .sort();
+
+    expect(sourceTypeMatchIds).toMatchObject(inspectorIssueDetailsTypes);
   });
 });
