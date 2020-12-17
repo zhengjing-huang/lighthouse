@@ -8,8 +8,11 @@
 const fs = require('fs');
 const fetch = require('node-fetch');
 
-const inspectorIssuesGathererPath = `${__dirname}/../../lighthouse-core/gather/gatherers/inspector-issues.js`;
+const inspectorIssuesGathererPath = __dirname +
+    '/../../lighthouse-core/gather/gatherers/inspector-issues.js';
 const inspectorIssuesGathererSource = fs.readFileSync(inspectorIssuesGathererPath, 'utf-8');
+
+/* eslint-env jest */
 
 describe('issueAdded types', () => {
   /** @type {Array<LH.Crdp.Audits.InspectorIssueDetails>} */
