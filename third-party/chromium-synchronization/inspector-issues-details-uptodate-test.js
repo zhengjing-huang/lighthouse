@@ -30,24 +30,27 @@ describe('issueAdded types', () => {
   it('should notify us if something changed', () => {
     expect(inspectorIssueDetailsTypes).toMatchInlineSnapshot(`
       Array [
-        "sameSiteCookieIssueDetails",
-        "mixedContentIssueDetails",
         "blockedByResponseIssueDetails",
-        "heavyAdIssueDetails",
         "contentSecurityPolicyIssueDetails",
+        "heavyAdIssueDetails",
+        "mixedContentIssueDetails",
+        "sameSiteCookieIssueDetails",
+        "sharedArrayBufferTransferIssueDetails",
       ]
     `);
   });
 
   it('are each handled explicitly in the gatherer', () => {
     // Regex relies on the typecasts
-    const sourceTypeMatches = inspectorIssuesGathererSource.matchAll(/LH\.Crdp\.Audits\.(.*?Details)>/g);
+    const sourceTypeMatches = inspectorIssuesGathererSource.matchAll(
+      /LH\.Crdp\.Audits\.(.*?Details)>/g
+    );
 
     const sourceTypeMatchIds = [...sourceTypeMatches]
-        .map(match => match[1])
-        // mapping TS type casing (TitleCase) to protocol types (camelCase)
-        .map(id => `${id.slice(0, 1).toLowerCase()}${id.slice(1)}`)
-        .sort();
+      .map(match => match[1])
+      // mapping TS type casing (TitleCase) to protocol types (camelCase)
+      .map(id => `${id.slice(0, 1).toLowerCase()}${id.slice(1)}`)
+      .sort();
 
     expect(sourceTypeMatchIds).toMatchObject(inspectorIssueDetailsTypes);
   });

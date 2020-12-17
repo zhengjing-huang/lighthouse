@@ -23,7 +23,6 @@
   "exclude": [
     "lighthouse-core/lib/cdt",
     "lighthouse-core/test/**/*.js",
-    ".github/test/*.js",
     "clients/test/**/*.js",
     "lighthouse-cli/test/fixtures/**/*.js",
     "lighthouse-core/scripts/legacy-javascript/variants",

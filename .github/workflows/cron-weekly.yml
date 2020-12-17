@@ -37,4 +37,4 @@ jobs:
         node-version: 12.x
     - run: yarn --frozen-lockfile
 
-    - run: yarn jest --testMatch="**/.github/test/**/*-test.js"
+    - run: yarn jest --testMatch="**/third-party/chromium-synchronization/*-test.js"
