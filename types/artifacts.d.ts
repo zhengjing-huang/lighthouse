@@ -28,8 +28,6 @@ declare global {
       fetchTime: string;
       /** A set of warnings about unexpected things encountered while loading and testing the page. */
       LighthouseRunWarnings: Array<string | IcuMessage>;
-      /** Whether the page was loaded on either a real or emulated mobile device. */
-      TestedAsMobileDevice: boolean;
       /** Device which Chrome is running on. */
       HostFormFactor: 'desktop'|'mobile';
       /** The user agent string of the version of Chrome used. */
@@ -124,8 +122,6 @@ declare global {
       Manifest: Artifacts.Manifest | null;
       /** The URL loaded with interception */
       MixedContent: {url: string};
-      /** The status code of the attempted load of the page while network access is disabled. */
-      Offline: number;
       /** Size and compression opportunity information for all the images in the page. */
       OptimizedImages: Array<Artifacts.OptimizedImage | Artifacts.OptimizedImageError>;
       /** HTML snippets and node paths from any password inputs that prevent pasting. */
@@ -138,8 +134,6 @@ declare global {
       ServiceWorker: {versions: Crdp.ServiceWorker.ServiceWorkerVersion[], registrations: Crdp.ServiceWorker.ServiceWorkerRegistration[]};
       /** Source maps of scripts executed in the page. */
       SourceMaps: Array<Artifacts.SourceMap>;
-      /** The status of an offline fetch of the page's start_url. -1 and a explanation if missing or there was an error. */
-      StartUrl: {url?: string, statusCode: number, explanation?: string};
       /** Information on <script> and <link> tags blocking first paint. */
       TagsBlockingFirstPaint: Artifacts.TagBlockingFirstPaint[];
       /** Information about tap targets including their position and size. */
@@ -169,7 +163,7 @@ declare global {
 
       export interface AxeRuleResult {
         id: string;
-        impact: string;
+        impact?: string;
         tags: Array<string>;
         nodes: Array<{
           html: string;
@@ -177,8 +171,6 @@ declare global {
           failureSummary?: string;
           node: NodeDetails;
         }>;
-        // When rules error they set these properties
-        // https://github.com/dequelabs/axe-core/blob/eeff122c2de11dd690fbad0e50ba2fdb244b50e8/lib/core/base/audit.js#L684-L693
         error?: RuleExecutionError;
       }
 
