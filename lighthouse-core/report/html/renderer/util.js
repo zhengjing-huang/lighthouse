@@ -424,10 +424,24 @@ class Util {
         networkThrottling = Util.i18n.strings.runtimeUnknown;
     }
 
-    // TODO(paulirish): revise Runtime Settings strings: https://github.com/GoogleChrome/lighthouse/pull/11796
-    const deviceEmulation = settings.formFactor === 'mobile'
-      ? Util.i18n.strings.runtimeMobileEmulation
-      : Util.i18n.strings.runtimeDesktopEmulation;
+
+    let deviceEmulation;
+    // COMPAT: remove this fallback handling at Lighthouse v8
+    // @ts-expect-error fallback handling for emulatedFormFactor
+    if (settings.emulatedFormFactor) {
+      // @ts-expect-error removed setting
+      deviceEmulation = settings.emulatedFormFactor === 'mobile'
+        ? Util.i18n.strings.runtimeMobileEmulation
+        // @ts-expect-error removed setting
+        : settings.emulatedFormFactor === 'desktop'
+          ? Util.i18n.strings.runtimeDesktopEmulation
+          : Util.i18n.strings.runtimeNoEmulation;
+    } else {
+      // TODO(paulirish): revise Runtime Settings strings: https://github.com/GoogleChrome/lighthouse/pull/11796
+      deviceEmulation = settings.formFactor === 'mobile'
+        ? Util.i18n.strings.runtimeMobileEmulation
+        : Util.i18n.strings.runtimeDesktopEmulation;
+    }
 
     return {
       deviceEmulation,
