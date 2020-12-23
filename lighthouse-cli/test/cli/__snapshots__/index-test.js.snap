@@ -1499,6 +1499,9 @@ Object {
       "html",
     ],
     "precomputedLanternData": null,
+    "providedCPUThrottlingString": null,
+    "providedDeviceString": null,
+    "providedNetworkThrottlingString": null,
     "screenEmulation": Object {
       "deviceScaleFactor": 2.625,
       "disabled": false,
@@ -1654,6 +1657,9 @@ Object {
       "json",
     ],
     "precomputedLanternData": null,
+    "providedCPUThrottlingString": null,
+    "providedDeviceString": null,
+    "providedNetworkThrottlingString": null,
     "screenEmulation": Object {
       "deviceScaleFactor": 2.625,
       "disabled": false,
