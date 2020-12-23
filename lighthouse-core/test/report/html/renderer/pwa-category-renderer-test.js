@@ -105,7 +105,8 @@ describe('PwaCategoryRenderer', () => {
 
       // Expect results to all be scorable or n/a
       for (const auditRef of auditRefs) {
-        expect(auditRef.result.scoreDisplayMode).toEqual(expect.stringMatching(/(binary)|(notApplicable)/));
+        const matcher = expect.stringMatching(/(binary)|(notApplicable)/);
+        expect(auditRef.result.scoreDisplayMode).toEqual(matcher);
       }
 
       groupIds = [...new Set(auditRefs.map(ref => ref.group))];
@@ -127,7 +128,7 @@ describe('PwaCategoryRenderer', () => {
       const categoryElem = pwaRenderer.render(category, clone.categoryGroups);
       const badgedElems = categoryElem.querySelectorAll(`.lh-audit-group--pwa-optimized.lh-badged`);
       expect(badgedElems.length).toEqual(1);
-    })
+    });
 
     it('only gives a group a badge when all the group\'s audits are passing', () => {
       for (const auditRef of auditRefs) {
@@ -199,7 +200,6 @@ describe('PwaCategoryRenderer', () => {
       for (const auditRef of auditRefs) {
         auditRef.result.score = 0;
         auditRef.result.scoreDisplayMode = 'binary';
-
       }
 
       const categoryElem = pwaRenderer.render(category, sampleResults.categoryGroups);
