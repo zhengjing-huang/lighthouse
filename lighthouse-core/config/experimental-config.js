@@ -13,11 +13,6 @@
 /** @type {LH.Config.Json} */
 const config = {
   extends: 'lighthouse:default',
-  settings: {
-    providedDeviceString: 'Real mobile device',
-    providedNetworkThrottlingString: 'Packet-based throttling',
-    providedCPUThrottlingString: 'cgroups CPU throttling',
-  },
   audits: [
     'autocomplete',
     'large-javascript-libraries',
