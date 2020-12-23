@@ -66,6 +66,7 @@ class Util {
     if (!clone.configSettings.locale) {
       clone.configSettings.locale = 'en';
     }
+    // If LHR is older than v7, it uses emulatedFormFactor instead of formFactor. https://github.com/GoogleChrome/lighthouse/blob/master/docs/emulation.md#changes-made-in-v7
     if (!clone.configSettings.formFactor) {
       // @ts-expect-error fallback handling for emulatedFormFactor
       clone.configSettings.formFactor = clone.configSettings.emulatedFormFactor;
@@ -428,6 +429,7 @@ class Util {
         networkThrottling = Util.i18n.strings.runtimeUnknown;
     }
 
+    // The fallback to runtimeNoEmulation only exists for v6-era emulatedFormFactor=none
     let device = settings.screenEmulation ? {
       mobile: Util.i18n.strings.runtimeMobileEmulation,
       desktop: Util.i18n.strings.runtimeDesktopEmulation,
