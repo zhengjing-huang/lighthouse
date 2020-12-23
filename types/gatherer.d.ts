@@ -26,6 +26,7 @@ declare global {
     export interface FRTransitionalDriver {
       defaultSession: FRProtocolSession;
       evaluateAsync(expression: string, options?: {useIsolation?: boolean}): Promise<any>;
+      evaluate<T extends any[], R>(mainFn: (...args: T) => R, options: {args: T, useIsolation?: boolean, deps?: Array<Function|string>}): FlattenedPromise<R>;
     }
 
     /** The limited context interface shared between pre and post Fraggle Rock Lighthouse. */
@@ -37,7 +38,6 @@ declare global {
       /** The url of the currently loaded page. If the main document redirects, this will be updated to keep track. */
       url: string;
       driver: Driver;
-      disableJavaScript?: boolean;
       passConfig: Config.Pass
       settings: Config.Settings;
       /** Gatherers can push to this array to add top-level warnings to the LHR. */

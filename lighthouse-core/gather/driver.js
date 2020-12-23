@@ -466,6 +466,11 @@ class Driver {
   }
 
   /**
+   * Note: Prefer `evaluate` instead.
+   * Evaluate an expression in the context of the current page. If useIsolation is true, the expression
+   * will be evaluated in a content script that has access to the page's DOM but whose JavaScript state
+   * is completely separate.
+   * Returns a promise that resolves on the expression's value.
    * @param {string} expression
    * @param {{useIsolation?: boolean}=} options
    * @return {Promise<*>}
@@ -484,9 +489,9 @@ class Driver {
    * @param {{args: T, useIsolation?: boolean, deps?: Array<Function|string>}} options `args` should
    *   match the args of `mainFn`, and can be any serializable value. `deps` are functions that must be
    *   defined for `mainFn` to work.
-   * @return {Promise<R>}
+   * @return {FlattenedPromise<R>}
    */
-  async evaluate(mainFn, options) {
+  evaluate(mainFn, options) {
     return this._executionContext.evaluate(mainFn, options);
   }
 
@@ -682,7 +687,6 @@ class Driver {
     const waitForLoad = options.waitForLoad || false;
     /** @type {Partial<LH.Gatherer.PassContext>} */
     const passContext = options.passContext || {};
-    const disableJS = passContext.disableJavaScript || false;
 
     if (waitForNavigated && (waitForFcp || waitForLoad)) {
       throw new Error('Cannot use both waitForNavigated and another event, pick just one');
@@ -701,7 +705,6 @@ class Driver {
 
     await this.sendCommand('Page.enable');
     await this.sendCommand('Page.setLifecycleEventsEnabled', {enabled: true});
-    await this.sendCommand('Emulation.setScriptExecutionDisabled', {value: disableJS});
     // No timeout needed for Page.navigate. See https://github.com/GoogleChrome/lighthouse/pull/6413.
     const waitforPageNavigateCmd = this._innerSendCommand('Page.navigate', undefined, {url});
 

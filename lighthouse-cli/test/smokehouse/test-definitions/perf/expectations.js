@@ -226,7 +226,7 @@ module.exports = [
           traceEventType: 'animation',
           node: {
             selector: 'body > div#animate-me',
-            nodeLabel: 'div',
+            nodeLabel: 'This is changing font size',
             snippet: '<div id="animate-me">',
             boundingRect: {
               top: 8,
@@ -241,7 +241,7 @@ module.exports = [
             {
               name: 'anim',
               failureReasonsMask: 8224,
-              unsupportedProperties: ['background-color'],
+              unsupportedProperties: ['font-size'],
             },
           ],
         },
@@ -341,7 +341,7 @@ module.exports = [
                   type: 'node',
                   path: '2,HTML,1,BODY,1,DIV',
                   selector: 'body > div#animated-boi',
-                  nodeLabel: 'div',
+                  nodeLabel: 'This is changing font size',
                   snippet: '<div id="animated-boi">',
                 },
                 subItems: {
@@ -355,7 +355,7 @@ module.exports = [
                       animation: 'alpha',
                     },
                     {
-                      failureReason: 'Unsupported CSS Property: background-color',
+                      failureReason: 'Unsupported CSS Property: font-size',
                       animation: 'beta',
                     },
                   ],

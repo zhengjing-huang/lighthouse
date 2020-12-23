@@ -42,13 +42,7 @@ module.exports = [
         'service-worker': {
           score: 0,
         },
-        'works-offline': {
-          score: 0,
-        },
         'viewport': {
-          score: 1,
-        },
-        'without-javascript': {
           score: 1,
         },
         'user-timings': {
@@ -59,8 +53,7 @@ module.exports = [
         },
         'installable-manifest': {
           score: 0,
-          explanation: 'Failures: No manifest was fetched.',
-          details: {items: [{isParseFailure: true}]},
+          details: {items: [{reason: 'No manifest was fetched'}]},
         },
         'splash-screen': {
           score: 0,
@@ -108,9 +101,14 @@ module.exports = [
         },
       },
       InstallabilityErrors: {
-        errors: [
-          {errorId: 'no-icon-available'},
-        ],
+        errors: {
+          length: 1,
+          0: {
+            // For a few days in m89, the warn-not-offline-capable error also showed up here.
+            // https://github.com/GoogleChrome/lighthouse/issues/11800
+            errorId: /no-icon-available/,
+          },
+        },
       },
     },
     lhr: {
@@ -131,13 +129,7 @@ module.exports = [
             scopeUrl: 'http://localhost:10503/',
           },
         },
-        'works-offline': {
-          score: 1,
-        },
         'viewport': {
-          score: 1,
-        },
-        'without-javascript': {
           score: 1,
         },
         'user-timings': {
@@ -148,7 +140,7 @@ module.exports = [
         },
         'installable-manifest': {
           score: 0,
-          explanation: 'Failures: Manifest icon failed to be fetched.',
+          details: {items: [{reason: 'Downloaded icon was empty or corrupted'}]},
         },
         'splash-screen': {
           score: 0,
@@ -183,6 +175,37 @@ module.exports = [
 
   {
     lhr: {
+      requestedUrl: 'http://localhost:10503/offline-ready.html?broken',
+      finalUrl: 'http://localhost:10503/offline-ready.html?broken',
+      audits: {
+        'installable-manifest': {
+          // Only starting in m89 do we get 'warn-not-offline-capable'.
+          // This only happens when a populated `fetch` handler that doesn't provide a 200 response
+          _minChromiumMilestone: 89,
+          score: 0,
+          details: {items: {length: 1}},
+          warnings: {length: 1},
+        },
+      },
+    },
+    artifacts: {
+      InstallabilityErrors: {
+        _minChromiumMilestone: 89,
+        errors: {
+          length: 2,
+          0: {
+            errorId: /warn-not-offline-capable/,
+          },
+          1: {
+            errorId: /no-icon-available/,
+          },
+        },
+      },
+    },
+  },
+
+  {
+    lhr: {
       requestedUrl: 'http://localhost:10503/offline-ready.html?slow',
       finalUrl: 'http://localhost:10503/offline-ready.html?slow',
       audits: {
@@ -192,9 +215,6 @@ module.exports = [
             scriptUrl: 'http://localhost:10503/offline-ready-sw.js?delay=5000&slow',
             scopeUrl: 'http://localhost:10503/',
           },
-        },
-        'works-offline': {
-          score: 1,
         },
       },
     },
