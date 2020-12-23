@@ -66,6 +66,10 @@ class Util {
     if (!clone.configSettings.locale) {
       clone.configSettings.locale = 'en';
     }
+    if (!clone.configSettings.formFactor) {
+      // @ts-expect-error fallback handling for emulatedFormFactor
+      clone.configSettings.formFactor = clone.configSettings.emulatedFormFactor;
+    }
 
     for (const audit of Object.values(clone.audits)) {
       // Turn 'not-applicable' (LHR <4.0) and 'not_applicable' (older proto versions)
@@ -424,10 +428,10 @@ class Util {
         networkThrottling = Util.i18n.strings.runtimeUnknown;
     }
 
-    let device = !settings.screenEmulation ? Util.i18n.strings.runtimeNoEmulation :
-     settings.formFactor === 'mobile'
-      ? Util.i18n.strings.runtimeMobileEmulation
-      : Util.i18n.strings.runtimeDesktopEmulation;
+    let device = settings.screenEmulation ? {
+      mobile: Util.i18n.strings.runtimeMobileEmulation,
+      desktop: Util.i18n.strings.runtimeDesktopEmulation,
+    }[settings.formFactor] : Util.i18n.strings.runtimeNoEmulation;
 
     if (settings.providedDeviceString) {
       device = settings.providedDeviceString;

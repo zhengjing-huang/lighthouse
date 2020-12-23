@@ -38,6 +38,8 @@ describe('util helpers', () => {
     assert.equal(get({screenEmulation: false, formFactor: 'mobile'}), 'No emulation');
     assert.equal(get({screenEmulation: true, formFactor: 'mobile'}), 'Emulated Mobile');
     assert.equal(get({screenEmulation: true, formFactor: 'desktop'}), 'Emulated Desktop');
+    // emulatedFormFactor=none mapped to formFactor thx to prepareReportUtil
+    assert.equal(get({formFactor: 'none'}), 'No emulation');
   });
 
   it('builds throttling strings when provided', () => {
