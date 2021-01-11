@@ -60,8 +60,7 @@ class TreemapViewer {
 
   initListeners() {
     window.addEventListener('resize', () => {
-      // this.resize();
-      this.render();
+      this.resize();
     });
 
     const treemapPanelEl = TreemapUtil.find('.panel--treemap');
@@ -151,7 +150,7 @@ class TreemapViewer {
   }
 
   render() {
-    webtreemap.render(this.el, this.currentRootNode, {
+    this.treemap = new webtreemap.TreeMap(this.currentRootNode, {
       padding: [18, 3, 3, 3],
       spacing: 10,
       caption: node => this.makeCaption(node),
@@ -159,19 +158,16 @@ class TreemapViewer {
       // showNode: node => node.resourceBytes > 100 * 100,
       // lowerBound: 0.2,
     });
+    this.treemap.render(this.el);
     TreemapUtil.find('.webtreemap-node').classList.add('webtreemap-node--root');
     this.updateColors();
   }
 
   resize() {
-    webtreemap.layout(this.el, this.currentRootNode, {
-      padding: [18, 3, 3, 3],
-      spacing: 10,
-      caption: node => this.makeCaption(node),
-      // showChildren: node => node.children && node.children.some(c => c.resourceBytes > 1000 * 100),
-      // showNode: node => node.resourceBytes > 100 * 100,
-      // lowerBound: 0.2,
-    });
+    if (!this.treemap) throw new Error('must call .render() first');
+
+    this.treemap.layout(this.currentRootNode, this.el);
+    this.updateColors();
   }
 
   /**
