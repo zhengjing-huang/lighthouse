@@ -9,8 +9,8 @@
 
 /** @typedef {HTMLElementTagNameMap & {[id: string]: HTMLElement}} HTMLElementByTagName */
 
-const KB = 1024;
-const MB = KB * KB;
+const KiB = 1024;
+const MiB = KiB * KiB;
 
 class TreemapUtil {
   /**
@@ -122,8 +122,8 @@ class TreemapUtil {
    * @param {number} bytes
    */
   static formatBytes(bytes) {
-    if (bytes >= MB) return (bytes / MB).toFixed(2) + ' MiB';
-    if (bytes >= KB) return (bytes / KB).toFixed(0) + ' KiB';
+    if (bytes >= MiB) return (bytes / MiB).toFixed(2) + ' MiB';
+    if (bytes >= KiB) return (bytes / KiB).toFixed(0) + ' KiB';
     return bytes + ' B';
   }
 
@@ -205,64 +205,30 @@ class TreemapUtil {
   static hsl(h, s, l) {
     return `hsl(${h}, ${s}%, ${l}%)`;
   }
-
-  /**
-   * Brilliant code by akinuri
-   * https://stackoverflow.com/a/39147465
-   * @param {number} r
-   * @param {number} g
-   * @param {number} b
-   */
-  static rgb2hue(r, g, b) {
-    r /= 255;
-    g /= 255;
-    b /= 255;
-
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    const c = max - min;
-    let hue = 0;
-    let segment;
-    let shift;
-    if (c === 0) {
-      hue = 0;
-    } else {
-      switch (max) {
-        case r:
-          segment = (g - b) / c;
-          shift = 0 / 60; // R° / (360° / hex sides)
-          if (segment < 0) { // hue > 180, full rotation
-            shift = 360 / 60; // R° / (360° / hex sides)
-          }
-          hue = segment + shift;
-          break;
-        case g:
-          segment = (b - r) / c;
-          shift = 120 / 60; // G° / (360° / hex sides)
-          hue = segment + shift;
-          break;
-        case b:
-          segment = (r - g) / c;
-          shift = 240 / 60; // B° / (360° / hex sides)
-          hue = segment + shift;
-          break;
-      }
-    }
-    return hue * 60; // hue is in [0,6], scale it up
-  }
 }
 
 // From DevTools:
 // https://cs.chromium.org/chromium/src/third_party/devtools-frontend/src/front_end/quick_open/CommandMenu.js?l=255&rcl=ad5c586c30a6bc55962b7a96b0533911c86bd4fc
+// https://gist.github.com/connorjclark/f114ef39fd98f8a1b89dab2bd873d2c2
 TreemapUtil.COLOR_HUES = [
-  '#F44336', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5', '#03A9F4',
-  '#00BCD4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39', '#FFC107',
-  '#FF9800', '#FF5722', '#795548', '#9E9E9E', '#607D8B',
-].map(hex => {
-  const hexParts = hex.slice(1).split(/(..)/).filter(Boolean);
-  const [r, g, b] = hexParts.map(part => parseInt(part, 16));
-  return TreemapUtil.rgb2hue(r, g, b);
-});
+  4.1,
+  339.6,
+  291.2,
+  261.6,
+  230.8,
+  198.7,
+  186.8,
+  174.4,
+  122.4,
+  87.8,
+  65.5,
+  45,
+  35.8,
+  14.4,
+  15.9,
+  0,
+  199.5,
+];
 
 // node export for testing.
 if (typeof module !== 'undefined' && module.exports) {

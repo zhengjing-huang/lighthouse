@@ -60,24 +60,26 @@ class TreemapViewer {
 
   initListeners() {
     window.addEventListener('resize', () => {
+      // this.resize();
       this.render();
     });
 
-    window.addEventListener('click', (e) => {
+    const treemapPanelEl = TreemapUtil.find('.panel--treemap');
+    treemapPanelEl.addEventListener('click', (e) => {
       if (!(e.target instanceof HTMLElement)) return;
       const nodeEl = e.target.closest('.webtreemap-node');
       if (!nodeEl) return;
       this.updateColors();
     });
 
-    window.addEventListener('mouseover', (e) => {
+    treemapPanelEl.addEventListener('mouseover', (e) => {
       if (!(e.target instanceof HTMLElement)) return;
       const nodeEl = e.target.closest('.webtreemap-node');
       if (!nodeEl) return;
       nodeEl.classList.add('webtreemap-node--hover');
     });
 
-    window.addEventListener('mouseout', (e) => {
+    treemapPanelEl.addEventListener('mouseout', (e) => {
       if (!(e.target instanceof HTMLElement)) return;
       const nodeEl = e.target.closest('.webtreemap-node');
       if (!nodeEl) return;
@@ -159,6 +161,17 @@ class TreemapViewer {
     });
     TreemapUtil.find('.webtreemap-node').classList.add('webtreemap-node--root');
     this.updateColors();
+  }
+
+  resize() {
+    webtreemap.layout(this.el, this.currentRootNode, {
+      padding: [18, 3, 3, 3],
+      spacing: 10,
+      caption: node => this.makeCaption(node),
+      // showChildren: node => node.children && node.children.some(c => c.resourceBytes > 1000 * 100),
+      // showNode: node => node.resourceBytes > 100 * 100,
+      // lowerBound: 0.2,
+    });
   }
 
   /**
