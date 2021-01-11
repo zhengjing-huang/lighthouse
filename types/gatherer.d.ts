@@ -26,14 +26,17 @@ declare global {
     export interface FRTransitionalDriver {
       defaultSession: FRProtocolSession;
       evaluateAsync(expression: string, options?: {useIsolation?: boolean}): Promise<any>;
+      evaluate<T extends any[], R>(mainFn: (...args: T) => R, options: {args: T, useIsolation?: boolean, deps?: Array<Function|string>}): FlattenedPromise<R>;
     }
 
     /** The limited context interface shared between pre and post Fraggle Rock Lighthouse. */
     export interface FRTransitionalContext {
+      gatherMode: GatherMode
       driver: FRTransitionalDriver;
     }
 
     export interface PassContext {
+      gatherMode: 'navigation';
       /** The url of the currently loaded page. If the main document redirects, this will be updated to keep track. */
       url: string;
       driver: Driver;
@@ -53,6 +56,12 @@ declare global {
     type PhaseResult_ = void|LH.GathererArtifacts[keyof LH.GathererArtifacts]
     export type PhaseResult = PhaseResult_ | Promise<PhaseResult_>
 
+    export type GatherMode = 'snapshot'|'timespan'|'navigation';
+
+    export interface GathererMeta {
+      supportedModes: Array<GatherMode>;
+    }
+
     export interface GathererInstance {
       name: keyof LH.GathererArtifacts;
       beforePass(context: LH.Gatherer.PassContext): PhaseResult;
@@ -61,8 +70,9 @@ declare global {
     }
 
     export interface FRGathererInstance {
-      name: keyof LH.GathererArtifacts;
-      afterPass(context: FRTransitionalContext): PhaseResult;
+      name: keyof LH.GathererArtifacts; // temporary COMPAT measure until artifact config support is available
+      meta: GathererMeta;
+      snapshot(context: FRTransitionalContext): PhaseResult;
     }
 
     namespace Simulation {
