@@ -66,7 +66,8 @@ class Util {
     if (!clone.configSettings.locale) {
       clone.configSettings.locale = 'en';
     }
-    // If LHR is older than v7, it uses emulatedFormFactor instead of formFactor. https://github.com/GoogleChrome/lighthouse/blob/master/docs/emulation.md#changes-made-in-v7
+    // If LHR is older than v7, it uses emulatedFormFactor instead of formFactor.
+    // https://github.com/GoogleChrome/lighthouse/blob/master/docs/emulation.md#changes-made-in-v7
     if (!clone.configSettings.formFactor) {
       // @ts-expect-error fallback handling for emulatedFormFactor
       clone.configSettings.formFactor = clone.configSettings.emulatedFormFactor;

@@ -85,8 +85,7 @@ describe('util helpers', () => {
     clonedSampleResult.configSettings.providedNetworkThrottlingString = 'Packet-level throtting';
     clonedSampleResult.configSettings.providedCPUThrottlingString = 'cgroups cpu throttling';
 
-    const descs = opts => Util.getEmulationDescriptions(opts);
-    expect(descs(clonedSampleResult.configSettings)).toMatchInlineSnapshot(`
+    expect(Util.getEmulationDescriptions(clonedSampleResult.configSettings)).toMatchInlineSnapshot(`
       Object {
         "cpuThrottling": "cgroups cpu throttling",
         "device": "WebPageTest device",
@@ -94,7 +93,6 @@ describe('util helpers', () => {
       }
     `);
   });
-
 
   describe('#prepareReportResult', () => {
     describe('backward compatibility', () => {
