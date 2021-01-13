@@ -54,5 +54,4 @@ results.html
 .editorconfig
 .eslintignore
 .eslintrc.js
-.travis.yml
 *.tgz
