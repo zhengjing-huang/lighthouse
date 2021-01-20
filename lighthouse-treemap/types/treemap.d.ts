@@ -1,7 +1,7 @@
 import _TreemapUtil = require('../app/src/util.js');
 
 declare global {
-  class TreeMap {
+  class WebTreeMap {
     constructor(data: any, options: WebTreeMapOptions);
     render(el: HTMLElement): void;
     layout(data: any, el: HTMLElement): void;
@@ -15,7 +15,7 @@ declare global {
   }
 
   var webtreemap: {
-    TreeMap: typeof TreeMap;
+    TreeMap: typeof WebTreeMap;
     render(el: HTMLElement, data: any, options: WebTreeMapOptions): void;
     sort(data: any): void;
   };
