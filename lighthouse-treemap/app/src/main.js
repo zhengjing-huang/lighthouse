@@ -53,7 +53,9 @@ class TreemapViewer {
   }
 
   createHeader() {
-    TreemapUtil.find('.lh-header--url').textContent = this.documentUrl;
+    const urlEl = /** @type {HTMLAnchorElement} */ (TreemapUtil.find('.lh-header--url'));
+    urlEl.textContent = this.documentUrl;
+    urlEl.href = this.documentUrl;
     TreemapUtil.find('.lh-header--size').textContent =
       TreemapUtil.formatBytes(this.createRootNodeForGroup('scripts').resourceBytes);
   }
@@ -89,6 +91,7 @@ class TreemapViewer {
   /**
    * Combines all the root nodes for a given group into a new root node.
    * @param {string} group
+   * @return {LH.Treemap.Node}
    */
   createRootNodeForGroup(group) {
     const rootNodes = this.rootNodesByGroup[group];

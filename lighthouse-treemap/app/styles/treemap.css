@@ -33,6 +33,10 @@ body {
 }
 .lh-header--url {
   font-weight: bold;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .lh-modes {
