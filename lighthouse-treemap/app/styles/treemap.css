@@ -5,6 +5,7 @@
  */
 
 body {
+  font-family: '.SFNSDisplay-Regular', 'Helvetica Neue', 'Lucida Grande', sans-serif;
   margin: 0;
   overflow-y: hidden;
   height: 100vh;
@@ -34,11 +35,11 @@ body {
   font-weight: bold;
 }
 
-.panel--modals {
+.lh-modes {
   display: flex;
 }
 
-.panel--treemap {
+.lh-treemap {
   margin: 10px;
 }
 
@@ -82,11 +83,11 @@ header {
 }
 
 .webtreemap-node--hover {
-  box-shadow: inset -1px -1px 0 3px black;
+  outline: 2px solid black;
 }
 
 .webtreemap-caption {
-  font-size: 14px;
+  font-size: 12px;
   text-align: center;
   word-break: break-word;
 }

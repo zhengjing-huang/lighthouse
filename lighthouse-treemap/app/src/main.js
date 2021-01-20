@@ -37,7 +37,7 @@ class TreemapViewer {
 
     for (const rootNodes of Object.values(this.rootNodesByGroup)) {
       for (const rootNode of rootNodes) {
-        TreemapUtil.dfs(rootNode.node, node => this.nodeToRootNodeMap.set(node, rootNode));
+        TreemapUtil.walk(rootNode.node, node => this.nodeToRootNodeMap.set(node, rootNode));
       }
     }
 
@@ -45,7 +45,7 @@ class TreemapViewer {
     this.currentRootNode; // eslint-disable-line no-unused-expressions
     this.documentUrl = options.lhr.requestedUrl;
     this.el = el;
-    this.getHue = TreemapUtil.stableHasher(TreemapUtil.COLOR_HUES);
+    this.getHueForKey = TreemapUtil.stableHasher(TreemapUtil.COLOR_HUES);
 
     this.createHeader();
     this.show();
@@ -63,38 +63,27 @@ class TreemapViewer {
       this.resize();
     });
 
-    const treemapPanelEl = TreemapUtil.find('.panel--treemap');
-    treemapPanelEl.addEventListener('click', (e) => {
+    const treemapEl = TreemapUtil.find('.lh-treemap');
+    treemapEl.addEventListener('click', (e) => {
       if (!(e.target instanceof HTMLElement)) return;
       const nodeEl = e.target.closest('.webtreemap-node');
       if (!nodeEl) return;
       this.updateColors();
     });
 
-    treemapPanelEl.addEventListener('mouseover', (e) => {
+    treemapEl.addEventListener('mouseover', (e) => {
       if (!(e.target instanceof HTMLElement)) return;
       const nodeEl = e.target.closest('.webtreemap-node');
       if (!nodeEl) return;
       nodeEl.classList.add('webtreemap-node--hover');
     });
 
-    treemapPanelEl.addEventListener('mouseout', (e) => {
+    treemapEl.addEventListener('mouseout', (e) => {
       if (!(e.target instanceof HTMLElement)) return;
       const nodeEl = e.target.closest('.webtreemap-node');
       if (!nodeEl) return;
       nodeEl.classList.remove('webtreemap-node--hover');
     });
-  }
-
-  /**
-   * @param {string} name
-   */
-  findRootNode(name) {
-    for (const rootNodes of Object.values(this.rootNodesByGroup)) {
-      for (const rootNode of rootNodes) {
-        if (rootNode.name === name) return rootNode;
-      }
-    }
   }
 
   /**
@@ -133,7 +122,7 @@ class TreemapViewer {
     const rootNodes = this.rootNodesByGroup[group];
     renderViewModeOptions(rootNodes);
 
-    TreemapUtil.dfs(this.currentRootNode, node => {
+    TreemapUtil.walk(this.currentRootNode, node => {
       // @ts-ignore: webtreemap will store `dom` on the data to speed up operations.
       // However, when we change the underlying data representation, we need to delete
       // all the cached DOM elements. Otherwise, the rendering will be incorrect when,
@@ -151,12 +140,9 @@ class TreemapViewer {
 
   render() {
     this.treemap = new webtreemap.TreeMap(this.currentRootNode, {
-      padding: [18, 3, 3, 3],
+      padding: [16, 3, 3, 3],
       spacing: 10,
       caption: node => this.makeCaption(node),
-      // showChildren: node => node.children && node.children.some(c => c.resourceBytes > 1000 * 100),
-      // showNode: node => node.resourceBytes > 100 * 100,
-      // lowerBound: 0.2,
     });
     this.treemap.render(this.el);
     TreemapUtil.find('.webtreemap-node').classList.add('webtreemap-node--root');
@@ -192,20 +178,20 @@ class TreemapViewer {
   }
 
   updateColors() {
-    TreemapUtil.dfs(this.currentRootNode, node => {
+    TreemapUtil.walk(this.currentRootNode, node => {
       // Color a root node and all children the same color.
       const rootNode = this.nodeToRootNodeMap.get(node);
       const hueKey = rootNode ? rootNode.name : node.name;
-      const hue = this.getHue(hueKey);
+      const hue = this.getHueForKey(hueKey);
 
       let backgroundColor = 'white';
       let color = 'black';
 
       if (hue !== undefined) {
         const sat = 60;
-        const lum = 90;
-        backgroundColor = TreemapUtil.hsl(hue, sat, Math.round(lum));
-        color = lum > 50 ? 'black' : 'white';
+        const lig = 90;
+        backgroundColor = TreemapUtil.hsl(hue, sat, lig);
+        color = lig > 50 ? 'black' : 'white';
       } else {
         // Ran out of colors.
       }
@@ -224,29 +210,29 @@ class TreemapViewer {
  * @param {LH.Treemap.RootNodeContainer[]} rootNodes
  */
 function renderViewModeOptions(rootNodes) {
-  const viewModesPanel = TreemapUtil.find('.panel--modals');
-  viewModesPanel.innerHTML = '';
+  const viewModesEl = TreemapUtil.find('.lh-modes');
+  viewModesEl.innerHTML = '';
 
   /**
    * @param {string} label
    * @param {number} bytes
    */
   function makeViewMode(label, bytes) {
-    const viewModeEl = TreemapUtil.createChildOf(viewModesPanel, 'div', 'view-mode');
-    viewModeEl.classList.add('view-mode--active');
+    const modesEl = TreemapUtil.createChildOf(viewModesEl, 'div', 'view-mode');
+    modesEl.classList.add('view-mode--active');
 
-    TreemapUtil.createChildOf(viewModeEl, 'span').textContent = label;
-    TreemapUtil.createChildOf(viewModeEl, 'span', 'lh-text-dim').textContent =
+    TreemapUtil.createChildOf(modesEl, 'span').textContent = label;
+    TreemapUtil.createChildOf(modesEl, 'span', 'lh-text-dim').textContent =
     ` (${TreemapUtil.formatBytes(bytes)})`;
 
-    viewModeEl.addEventListener('click', () => {
+    modesEl.addEventListener('click', () => {
       treemapViewer.show();
     });
   }
 
   let bytes = 0;
   for (const rootNode of rootNodes) {
-    TreemapUtil.dfs(rootNode.node, node => {
+    TreemapUtil.walk(rootNode.node, node => {
       // Only consider leaf nodes.
       if (node.children) return;
 
@@ -274,7 +260,7 @@ function injectOptions(options) {
  * @param {LH.Treemap.Options} options
  */
 function init(options) {
-  treemapViewer = new TreemapViewer(options, TreemapUtil.find('.panel--treemap'));
+  treemapViewer = new TreemapViewer(options, TreemapUtil.find('.lh-treemap'));
 
   injectOptions(options);
 

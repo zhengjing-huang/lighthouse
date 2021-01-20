@@ -18,7 +18,7 @@ class TreemapUtil {
    * @param {(node: LH.Treemap.Node, path: string[]) => void} fn
    * @param {string[]=} path
    */
-  static dfs(node, fn, path) {
+  static walk(node, fn, path) {
     if (!path) path = [];
     path.push(node.name);
 
@@ -26,7 +26,7 @@ class TreemapUtil {
     if (!node.children) return;
 
     for (const child of node.children) {
-      TreemapUtil.dfs(child, fn, [...path]);
+      TreemapUtil.walk(child, fn, [...path]);
     }
   }
 
@@ -60,7 +60,7 @@ class TreemapUtil {
    */
   static elide(string, length) {
     if (string.length <= length) return string;
-    return string.slice(0, length) + '…';
+    return string.slice(0, length - 1) + '…';
   }
 
   /**
@@ -122,8 +122,8 @@ class TreemapUtil {
    * @param {number} bytes
    */
   static formatBytes(bytes) {
-    if (bytes >= MiB) return (bytes / MiB).toFixed(2) + ' MiB';
-    if (bytes >= KiB) return (bytes / KiB).toFixed(0) + ' KiB';
+    if (bytes >= MiB) return (bytes / MiB).toFixed(2) + '\xa0MiB';
+    if (bytes >= KiB) return (bytes / KiB).toFixed(0) + '\xa0KiB';
     return bytes + ' B';
   }
 
@@ -133,36 +133,8 @@ class TreemapUtil {
    */
   static format(value, unit) {
     if (unit === 'bytes') return TreemapUtil.formatBytes(value);
-    if (unit === 'time') return `${value} ms`;
+    if (unit === 'time') return `${value}\xa0ms`;
     return `${value} ${unit}`;
-  }
-
-  /**
-   * @example array.sort((a, b) => sortByPrecedence(['first', 'me next. alpha sort after'], a, b));
-   * @template T
-   * @param {T[]} precedence
-   * @param {T} a
-   * @param {T} b
-   */
-  static sortByPrecedence(precedence, a, b) {
-    const aIndex = precedence.indexOf(a);
-    const bIndex = precedence.indexOf(b);
-
-    // If neither value has a title with a predefined order, use an alphabetical comparison.
-    if (aIndex === -1 && bIndex === -1) {
-      return String(a).localeCompare(String(b));
-    }
-
-    // If just one value has a title with a predefined order, it is greater.
-    if (aIndex === -1 && bIndex >= 0) {
-      return 1;
-    }
-    if (bIndex === -1 && aIndex >= 0) {
-      return -1;
-    }
-
-    // Both values have a title with a predefined order, so do a simple comparison.
-    return aIndex - bIndex;
   }
 
   /**
