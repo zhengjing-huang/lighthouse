@@ -7,7 +7,7 @@
 
 /* globals getElementsInDocument getNodeDetails */
 
-const Gatherer = require('../gatherer.js');
+const Gatherer = require('../../../fraggle-rock/gather/base-gatherer.js');
 const pageFunctions = require('../../../lib/page-functions.js');
 
 /**
@@ -41,11 +41,16 @@ function getEmbeddedContent() {
 }
 
 class EmbeddedContent extends Gatherer {
+  /** @type {LH.Gatherer.GathererMeta} */
+  meta = {
+    supportedModes: ['snapshot', 'navigation'],
+  }
+
   /**
-   * @param {LH.Gatherer.PassContext} passContext
+   * @param {LH.Gatherer.FRTransitionalContext} passContext
    * @return {Promise<LH.Artifacts['EmbeddedContent']>}
    */
-  afterPass(passContext) {
+  snapshot(passContext) {
     return passContext.driver.evaluate(getEmbeddedContent, {
       args: [],
       deps: [

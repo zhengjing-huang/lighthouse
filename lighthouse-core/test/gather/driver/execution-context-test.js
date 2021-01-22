@@ -206,10 +206,9 @@ describe('.evaluate', () => {
           return __nativePromise.resolve()
             .then(_ => (() => {
       
-      function main(value) {
+      return (function main(value) {
       return value;
-    }
-      return main(1);
+    })(1);
     })())
             .catch(function wrapRuntimeEvalErrorInBrowser(err) {
   if (!err || typeof err === 'string') {
@@ -246,10 +245,32 @@ describe('.evaluate', () => {
     const code = mockFn.mock.calls[0][0];
     expect(code).toBe(`(() => {
       
-      function mainFn(value) {
+      return (function mainFn(value) {
       return value;
-    }
-      return mainFn(1);
+    })(1);
+    })()`);
+    expect(eval(code)).toEqual(1);
+  });
+
+  it('transforms parameters into an expression (arrows)', async () => {
+    // Mock so the argument can be intercepted, and the generated code
+    // can be evaluated without the error catching code.
+    const mockFn = executionContext._evaluateInContext = jest.fn()
+      .mockImplementation(() => Promise.resolve());
+
+    /** @param {number} value */
+    const mainFn = (value) => {
+      return value;
+    };
+    /** @type {number} */
+    const value = await executionContext.evaluate(mainFn, {args: [1]}); // eslint-disable-line no-unused-vars
+
+    const code = mockFn.mock.calls[0][0];
+    expect(code).toBe(`(() => {
+      
+      return ((value) => {
+      return value;
+    })(1);
     })()`);
     expect(eval(code)).toEqual(1);
   });
@@ -294,10 +315,9 @@ describe('.evaluate', () => {
 function square(val) {
       return val * val;
     }
-      function mainFn({a, b}, passThru) {
+      return (function mainFn({a, b}, passThru) {
       return {a: abs(a), b: square(b), passThru};
-    }
-      return mainFn({"a":-5,"b":10},"hello");
+    })({"a":-5,"b":10},"hello");
     })()`);
     expect(eval(code)).toEqual({a: 5, b: 100, passThru: 'hello'});
   });

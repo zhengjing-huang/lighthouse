@@ -7,7 +7,7 @@
 
 /* global getNodeDetails */
 
-const Gatherer = require('./gatherer.js');
+const Gatherer = require('../../fraggle-rock/gather/base-gatherer.js');
 const pageFunctions = require('../../lib/page-functions.js');
 
 /* eslint-env browser, node */
@@ -36,12 +36,17 @@ function collectIFrameElements() {
 /* c8 ignore stop */
 
 class IFrameElements extends Gatherer {
+  /** @type {LH.Gatherer.GathererMeta} */
+  meta = {
+    supportedModes: ['snapshot', 'navigation'],
+  }
+
   /**
-   * @param {LH.Gatherer.PassContext} passContext
+   * @param {LH.Gatherer.FRTransitionalContext} passContext
    * @return {Promise<LH.Artifacts['IFrameElements']>}
    * @override
    */
-  async afterPass(passContext) {
+  async snapshot(passContext) {
     const driver = passContext.driver;
 
     const iframeElements = await driver.evaluate(collectIFrameElements, {

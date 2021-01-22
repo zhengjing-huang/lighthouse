@@ -7,10 +7,9 @@
 
 /* global document ClipboardEvent getNodeDetails */
 
-const Gatherer = require('../gatherer.js');
+const Gatherer = require('../../../fraggle-rock/gather/base-gatherer.js');
 const pageFunctions = require('../../../lib/page-functions.js');
 
-// This is run in the page, not Lighthouse itself.
 /**
  * @return {LH.Artifacts['PasswordInputsWithPreventedPaste']}
  */
@@ -30,11 +29,16 @@ function findPasswordInputsWithPreventedPaste() {
 /* c8 ignore stop */
 
 class PasswordInputsWithPreventedPaste extends Gatherer {
+  /** @type {LH.Gatherer.GathererMeta} */
+  meta = {
+    supportedModes: ['snapshot', 'navigation'],
+  }
+
   /**
-   * @param {LH.Gatherer.PassContext} passContext
+   * @param {LH.Gatherer.FRTransitionalContext} passContext
    * @return {Promise<LH.Artifacts['PasswordInputsWithPreventedPaste']>}
    */
-  afterPass(passContext) {
+  snapshot(passContext) {
     return passContext.driver.evaluate(findPasswordInputsWithPreventedPaste, {
       args: [],
       deps: [pageFunctions.getNodeDetailsString],

@@ -30,10 +30,6 @@ function remoteObjectToString(obj) {
   return `[${type} ${className}]`;
 }
 
-/**
- * @implements {LH.Gatherer.GathererInstance}
- * @implements {LH.Gatherer.FRGathererInstance}
- */
 class ConsoleMessages extends Gatherer {
   /** @type {LH.Gatherer.GathererMeta} */
   meta = {

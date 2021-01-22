@@ -98,10 +98,6 @@ async function runA11yChecks() {
 }
 /* c8 ignore stop */
 
-/**
- * @implements {LH.Gatherer.GathererInstance}
- * @implements {LH.Gatherer.FRGathererInstance}
- */
 class Accessibility extends Gatherer {
   /** @type {LH.Gatherer.GathererMeta} */
   meta = {
