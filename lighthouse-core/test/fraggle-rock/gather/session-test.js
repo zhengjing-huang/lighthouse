@@ -66,7 +66,7 @@ describe('ProtocolSession', () => {
   for (const method of delegateMethods) {
     describe(`.${method}`, () => {
       it('delegates to puppeteer', async () => {
-        const puppeteerFn = (puppeteerSession[method] = jest.fn());
+        const puppeteerFn = puppeteerSession[method] = jest.fn();
         const callback = () => undefined;
 
         session[method]('Page.frameNavigated', callback);
@@ -103,7 +103,7 @@ describe('ProtocolSession', () => {
 
   describe('.sendCommand', () => {
     it('delegates to puppeteer', async () => {
-      const send = (puppeteerSession.send = jest.fn().mockResolvedValue(123));
+      const send = puppeteerSession.send = jest.fn().mockResolvedValue(123);
 
       const result = await session.sendCommand('Page.navigate', {url: 'foo'});
       expect(result).toEqual(123);
