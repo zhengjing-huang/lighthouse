@@ -94,25 +94,7 @@ class TreemapViewer {
    * @return {LH.Treemap.Node}
    */
   createRootNodeForGroup(group) {
-    const rootNodes = this.rootNodesByGroup[group];
-
-    const children = rootNodes;
-    // const children = rootNodes.map(rootNode => {
-    //   // TODO: keep?
-    //   // Wrap with the name of the rootNode. Only for bundles.
-    //   if (group === 'scripts' && rootNode.node.children) {
-    //     return {
-    //       name: rootNode.name,
-    //       children: [rootNode.node],
-    //       resourceBytes: rootNode.node.resourceBytes,
-    //       unusedBytes: rootNode.node.unusedBytes,
-    //     };
-    //   }
-
-    //   return rootNode.node;
-    // });
-
-
+    const children = [...this.rootNodesByGroup[group]];
     return {
       name: this.documentUrl,
       resourceBytes: children.reduce((acc, cur) => cur.resourceBytes + acc, 0),

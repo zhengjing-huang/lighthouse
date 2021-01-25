@@ -63,10 +63,7 @@ describe('ScriptTreemapData audit', () => {
         .toMatchInlineSnapshot(`
         Object {
           "name": "https://sqoosh.app/no-map-or-usage.js",
-          "node": Object {
-            "name": "https://sqoosh.app/no-map-or-usage.js",
-            "resourceBytes": 37,
-          },
+          "resourceBytes": 37,
         }
       `);
 
@@ -105,14 +102,15 @@ describe('ScriptTreemapData audit', () => {
     });
 
     it('has root nodes', () => {
-      expect(JSON.stringify(treemapData).length).toMatchInlineSnapshot(`86635`);
+      expect(JSON.stringify(treemapData).length).toMatchInlineSnapshot(`86735`);
       expect(treemapData).toMatchSnapshot();
     });
 
     it('finds duplicates', () => {
-      expect(JSON.stringify(treemapData).length).toMatchInlineSnapshot(`86635`);
+      expect(JSON.stringify(treemapData).length).toMatchInlineSnapshot(`86735`);
       // @ts-ignore all these children exist.
-      const leafNode = treemapData[0].node.
+      const leafNode = treemapData[0].
+        children[0].
         children[0].
         children[0].
         children[0].
@@ -163,25 +161,30 @@ describe('ScriptTreemapData audit', () => {
     });
 
     it('creates directory node when multiple leaf nodes', () => {
-      const rootNode = ScriptTreemapData.makeRootNodeFromScriptWithSourceMap('', {
+      const rootNode = ScriptTreemapData.makeRootNodeFromScriptWithSourceMap(src, '', {
         'folder/a.js': {resourceBytes: 100},
         'folder/b.js': {resourceBytes: 100},
       });
       expect(rootNode).toMatchObject(
-       {
-         children: [
-           {
-             name: 'a.js',
-             resourceBytes: 100,
-           },
-           {
-             name: 'b.js',
-             resourceBytes: 100,
-           },
-         ],
-         name: '/folder',
-         resourceBytes: 200,
-       }
+        {
+          name: src,
+          children: [
+            {
+              children: [
+                {
+                  name: 'a.js',
+                  resourceBytes: 100,
+                },
+                {
+                  name: 'b.js',
+                  resourceBytes: 100,
+                },
+              ],
+              name: '/folder',
+              resourceBytes: 200,
+            },
+          ],
+        }
       );
     });
 
@@ -249,13 +252,17 @@ describe('ScriptTreemapData audit', () => {
         }
       );
 
-      expect(rootNode.children && rootNode.children[0].name).toBe('some/prefix');
-      expect(rootNode.resourceBytes).toBe(201);
-      expect(rootNode.unusedBytes).toBe(101);
+      let node = rootNode;
+      expect(node.name).toBe(src);
+      expect(node.resourceBytes).toBe(201);
+      expect(node.unusedBytes).toBe(101);
 
-      const children = rootNode.children || [];
-      expect(children[0].name).toBe('/main.js');
-      expect(children[1].name).toBe('not/a.js');
+      node = /** @type {LH.Treemap.Node} */ (rootNode.children && rootNode.children[0]);
+      expect(node.name).toBe('some/prefix');
+      expect(node.resourceBytes).toBe(201);
+      expect(node.unusedBytes).toBe(101);
+      expect(node.children && node.children[0].name).toBe('/main.js');
+      expect(node.children && node.children[1].name).toBe('not/a.js');
     });
 
     it('nodes have unusedBytes data', () => {
