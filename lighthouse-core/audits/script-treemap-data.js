@@ -8,11 +8,7 @@
 /**
  * @fileoverview
  * Creates nodes for treemap app.
- */
-
-/**
- * Ex: lighthouse-treemap/app/debug.json
- * @typedef {LH.Treemap.Node[]} TreemapData
+ * Example output: lighthouse-treemap/app/debug.json
  */
 
 /**
@@ -134,11 +130,13 @@ class ScriptTreemapDataAudit extends Audit {
   }
 
   /**
-   * Returns root node containers where the first level of nodes are script URLs.
+   * Returns root nodes where the first level of nodes are URLs.
+   * Every external script has a root node.
+   * All inline scripts are combined into a single root node.
    * If a script has a source map, that node will be set by makeNodeFromSourceMapData.
    * @param {LH.Artifacts} artifacts
    * @param {LH.Audit.Context} context
-   * @return {Promise<TreemapData>}
+   * @return {Promise<LH.Treemap.Node[]>}
    */
   static async makeRootNodes(artifacts, context) {
     /** @type {LH.Treemap.Node[]} */

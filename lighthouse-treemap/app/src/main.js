@@ -24,7 +24,7 @@ class TreemapViewer {
       throw new Error('missing script-treemap-data');
     }
 
-    /** @type {import('../../../lighthouse-core/audits/script-treemap-data').TreemapData} */
+    /** @type {LH.Treemap.Node[]} */
     const scriptRootNodes = treemapDebugData.treemapData;
 
     /** @type {WeakMap<LH.Treemap.Node, LH.Treemap.Node>} */

@@ -29,7 +29,7 @@ function generateRecord(url, resourceSize, resourceType) {
 
 describe('ScriptTreemapData audit', () => {
   describe('squoosh fixture', () => {
-    /** @type {import('../../audits/script-treemap-data.js').TreemapData} */
+    /** @type {LH.Treemap.Node[]} */
     let treemapData;
     beforeAll(async () => {
       const context = {computedCache: new Map()};
@@ -73,7 +73,7 @@ describe('ScriptTreemapData audit', () => {
   });
 
   describe('coursehero fixture', () => {
-    /** @type {import('../../audits/script-treemap-data.js').TreemapData} */
+    /** @type {LH.Treemap.Node[]} */
     let treemapData;
     beforeAll(async () => {
       const context = {computedCache: new Map()};
