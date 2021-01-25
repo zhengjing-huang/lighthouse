@@ -123,7 +123,7 @@ class TreemapUtil {
   static formatBytes(bytes) {
     if (bytes >= MiB) return (bytes / MiB).toFixed(2) + '\xa0MiB';
     if (bytes >= KiB) return (bytes / KiB).toFixed(0) + '\xa0KiB';
-    return bytes + ' B';
+    return bytes + '\xa0B';
   }
 
   /**
