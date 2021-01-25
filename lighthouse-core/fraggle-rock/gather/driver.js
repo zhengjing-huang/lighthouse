@@ -19,6 +19,7 @@ const defaultSession = {
   setNextProtocolTimeout: throwNotConnectedFn,
   on: throwNotConnectedFn,
   once: throwNotConnectedFn,
+  onAny: throwNotConnectedFn,
   off: throwNotConnectedFn,
   sendCommand: throwNotConnectedFn,
 };

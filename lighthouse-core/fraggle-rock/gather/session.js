@@ -5,7 +5,7 @@
  */
 'use strict';
 
-const MONKEYPATCHED_EMIT = Symbol('monkeypatch');
+const SessionEmitMonkeypatch = Symbol('monkeypatch');
 
 /** @implements {LH.Gatherer.FRProtocolSession} */
 class ProtocolSession {
@@ -19,13 +19,13 @@ class ProtocolSession {
     // This patched method will now emit a copy of every event on `*`.
     const originalEmit = session.emit;
     // @ts-expect-error - Test for the monkeypatch.
-    if (originalEmit[MONKEYPATCHED_EMIT]) return;
+    if (originalEmit[SessionEmitMonkeypatch]) return;
     session.emit = (method, ...params) => {
       originalEmit.call(session, '*', {method, params});
       return originalEmit.call(session, method, ...params);
     };
     // @ts-expect-error - It's monkeypatching 🤷‍♂️.
-    session.emit[MONKEYPATCHED_EMIT] = true;
+    session.emit[SessionEmitMonkeypatch] = true;
   }
 
   /**
