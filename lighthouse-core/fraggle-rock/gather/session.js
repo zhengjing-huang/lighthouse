@@ -73,7 +73,7 @@ class ProtocolSession {
    * Bind to our custom event that fires for *any* protocol event.
    * @param {(payload: LH.Protocol.RawEventMessage) => void} callback
    */
-  onAny(callback) {
+  onAnyProtocolMessage(callback) {
     this._session.on('*', /** @type {*} */ (callback));
   }
 

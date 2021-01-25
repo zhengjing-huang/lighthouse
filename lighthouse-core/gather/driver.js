@@ -280,7 +280,7 @@ class Driver {
    * Bind to *any* protocol event.
    * @param {(payload: LH.Protocol.RawEventMessage) => void} callback
    */
-  onAny(callback) {
+  onAnyProtocolMessage(callback) {
     this._connection.on('protocolevent', callback);
   }
 
