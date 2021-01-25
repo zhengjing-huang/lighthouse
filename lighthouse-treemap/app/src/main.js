@@ -56,8 +56,9 @@ class TreemapViewer {
     const urlEl = TreemapUtil.find('a.lh-header--url');
     urlEl.textContent = this.documentUrl;
     urlEl.href = this.documentUrl;
-    TreemapUtil.find('.lh-header--size').textContent =
-      TreemapUtil.formatBytes(this.createRootNodeForGroup('scripts').resourceBytes);
+
+    const bytes = this.wrapNodesInNewRootNode(this.rootNodesByGroup.scripts).resourceBytes;
+    TreemapUtil.find('.lh-header--size').textContent = TreemapUtil.formatBytes(bytes);
   }
 
   initListeners() {
@@ -89,12 +90,11 @@ class TreemapViewer {
   }
 
   /**
-   * Combines all the root nodes for a given group into a new root node.
-   * @param {string} group
+   * @param {LH.Treemap.Node[]} nodes
    * @return {LH.Treemap.Node}
    */
-  createRootNodeForGroup(group) {
-    const children = [...this.rootNodesByGroup[group]];
+  wrapNodesInNewRootNode(nodes) {
+    const children = [...nodes];
     return {
       name: this.documentUrl,
       resourceBytes: children.reduce((acc, cur) => cur.resourceBytes + acc, 0),
@@ -106,8 +106,8 @@ class TreemapViewer {
   show() {
     const group = 'scripts';
 
-    this.currentRootNode = this.createRootNodeForGroup(group);
     const rootNodes = this.rootNodesByGroup[group];
+    this.currentRootNode = this.wrapNodesInNewRootNode(rootNodes);
     renderViewModeOptions(rootNodes);
 
     TreemapUtil.walk(this.currentRootNode, node => {
