@@ -70,7 +70,7 @@ class ReportRenderer {
    */
   _renderReportTopbar(report) {
     const el = this._dom.cloneTemplate('#tmpl-lh-topbar', this._templateContext);
-    const metadataUrl = /** @type {HTMLAnchorElement} */ (this._dom.find('.lh-topbar__url', el));
+    const metadataUrl = this._dom.find('a.lh-topbar__url', el);
     metadataUrl.href = metadataUrl.textContent = report.finalUrl;
     metadataUrl.title = report.finalUrl;
     return el;
@@ -83,7 +83,7 @@ class ReportRenderer {
     const el = this._dom.cloneTemplate('#tmpl-lh-heading', this._templateContext);
     const domFragment = this._dom.cloneTemplate('#tmpl-lh-scores-wrapper', this._templateContext);
     const placeholder = this._dom.find('.lh-scores-wrapper-placeholder', el);
-    /** @type {HTMLDivElement} */ (placeholder.parentNode).replaceChild(domFragment, placeholder);
+    placeholder.replaceWith(domFragment);
     return el;
   }
 
