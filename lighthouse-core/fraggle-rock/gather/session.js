@@ -71,8 +71,7 @@ class ProtocolSession {
 
   /**
    * Bind to our custom event that fires for *any* protocol event.
-   * @template {keyof LH.CrdpEvents} E
-   * @param {(payload: {method: E, params: LH.CrdpEvents[E]}) => void} callback
+   * @param {(payload: LH.Protocol.RawEventMessage) => void} callback
    */
   onAny(callback) {
     this._session.on('*', /** @type {*} */ (callback));
