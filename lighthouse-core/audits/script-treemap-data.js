@@ -7,12 +7,12 @@
 
 /**
  * @fileoverview
- * Creates treemap data for treemap app.
+ * Creates nodes for treemap app.
  */
 
 /**
  * Ex: https://gist.github.com/connorjclark/0ef1099ae994c075e36d65fecb4d26a7
- * @typedef {LH.Treemap.RootNodeContainer[]} TreemapData
+ * @typedef {LH.Treemap.Node[]} TreemapData
  */
 
 /**
@@ -44,11 +44,12 @@ class ScriptTreemapDataAudit extends Audit {
    * from a source map, and non-leaf nodes are directories. Leaf nodes have data
    * for bytes, coverage, etc., when available, and non-leaf nodes have the
    * same data as the sum of all descendant leaf nodes.
+   * @param {string} src
    * @param {string} sourceRoot
    * @param {Record<string, SourceData>} sourcesData
    * @return {LH.Treemap.Node}
    */
-  static prepareTreemapNodes(sourceRoot, sourcesData) {
+  static makeRootNodeFromScriptWithSourceMap(src, sourceRoot, sourcesData) {
     /**
      * @param {string} name
      * @return {LH.Treemap.Node}
@@ -73,7 +74,7 @@ class ScriptTreemapDataAudit extends Audit {
     function addAllNodesInSourcePath(source, data) {
       let node = topNode;
 
-      // Apply the data to the topNode.
+      // Apply the data to the rootNode.
       topNode.resourceBytes += data.resourceBytes;
       if (data.unusedBytes) topNode.unusedBytes = (topNode.unusedBytes || 0) + data.unusedBytes;
 
@@ -125,19 +126,23 @@ class ScriptTreemapDataAudit extends Audit {
     }
     collapseAll(topNode);
 
-    return topNode;
+    // Root node should be just the script src.
+    const rootNode = {...topNode};
+    rootNode.name = src;
+    rootNode.children = [topNode];
+    return rootNode;
   }
 
   /**
    * Returns root node containers where the first level of nodes are script URLs.
-   * If a script has a source map, that node will be set by prepareTreemapNodes.
+   * If a script has a source map, that node will be set by makeNodeFromSourceMapData.
    * @param {LH.Artifacts} artifacts
    * @param {LH.Audit.Context} context
    * @return {Promise<TreemapData>}
    */
   static async makeRootNodes(artifacts, context) {
-    /** @type {LH.Treemap.RootNodeContainer[]} */
-    const rootNodeContainers = [];
+    /** @type {LH.Treemap.Node[]} */
+    const rootNodes = [];
 
     let inlineScriptLength = 0;
     for (const scriptElement of artifacts.ScriptElements) {
@@ -149,12 +154,9 @@ class ScriptTreemapDataAudit extends Audit {
     }
     if (inlineScriptLength) {
       const name = artifacts.URL.finalUrl;
-      rootNodeContainers.push({
+      rootNodes.push({
         name,
-        node: {
-          name,
-          resourceBytes: inlineScriptLength,
-        },
+        resourceBytes: inlineScriptLength,
       });
     }
 
@@ -171,12 +173,9 @@ class ScriptTreemapDataAudit extends Audit {
         // No bundle and no coverage information, so simply make a single node
         // detailing how big the script is.
 
-        rootNodeContainers.push({
+        rootNodes.push({
           name,
-          node: {
-            name,
-            resourceBytes: scriptElement.src.length,
-          },
+          resourceBytes: scriptElement.src.length,
         });
         continue;
       }
@@ -215,7 +214,8 @@ class ScriptTreemapDataAudit extends Audit {
           sourcesData[source] = sourceData;
         }
 
-        node = this.prepareTreemapNodes(bundle.rawMap.sourceRoot || '', sourcesData);
+        node = this.makeRootNodeFromScriptWithSourceMap(
+          scriptElement.src, bundle.rawMap.sourceRoot || '', sourcesData);
       } else {
         // No valid source map for this script, so we can only produce a single node.
 
@@ -226,13 +226,10 @@ class ScriptTreemapDataAudit extends Audit {
         };
       }
 
-      rootNodeContainers.push({
-        name,
-        node,
-      });
+      rootNodes.push(node);
     }
 
-    return rootNodeContainers;
+    return rootNodes;
   }
 
   /**

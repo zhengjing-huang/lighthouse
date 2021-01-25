@@ -14,7 +14,8 @@ const {loadSourceMapAndUsageFixture, loadSourceMapFixture, makeParamsOptional} =
 
 const ScriptTreemapData = {
   audit: makeParamsOptional(ScriptTreemapData_.audit),
-  prepareTreemapNodes: makeParamsOptional(ScriptTreemapData_.prepareTreemapNodes),
+  makeRootNodeFromScriptWithSourceMap:
+    makeParamsOptional(ScriptTreemapData_.makeRootNodeFromScriptWithSourceMap),
 };
 
 /**
@@ -69,7 +70,7 @@ describe('ScriptTreemapData audit', () => {
         }
       `);
 
-      expect(JSON.stringify(treemapData).length).toMatchInlineSnapshot(`6621`);
+      expect(JSON.stringify(treemapData).length).toMatchInlineSnapshot(`6612`);
       expect(treemapData).toMatchSnapshot();
     });
   });
@@ -120,40 +121,49 @@ describe('ScriptTreemapData audit', () => {
     });
   });
 
-  describe('.prepareTreemapNodes', () => {
+  describe('.makeRootNodeFromScriptWithSourceMap', () => {
+    const src = 'main.js';
+
     it('uses node data when available', () => {
-      const rootNode = ScriptTreemapData.prepareTreemapNodes('', {
+      const rootNode = ScriptTreemapData.makeRootNodeFromScriptWithSourceMap(src, '', {
         'a.js': {resourceBytes: 100},
         'b.js': {resourceBytes: 100, duplicatedNormalizedModuleName: 'blah'},
         'c.js': {resourceBytes: 100, unusedBytes: 50},
       });
       expect(rootNode).toMatchObject(
          {
+           name: src,
+           resourceBytes: 300,
+           unusedBytes: 50,
            children: [
              {
-               name: 'a.js',
-               resourceBytes: 100,
-             },
-             {
-               duplicatedNormalizedModuleName: 'blah',
-               name: 'b.js',
-               resourceBytes: 100,
-             },
-             {
-               name: 'c.js',
-               resourceBytes: 100,
+               children: [
+                 {
+                   name: 'a.js',
+                   resourceBytes: 100,
+                 },
+                 {
+                   duplicatedNormalizedModuleName: 'blah',
+                   name: 'b.js',
+                   resourceBytes: 100,
+                 },
+                 {
+                   name: 'c.js',
+                   resourceBytes: 100,
+                   unusedBytes: 50,
+                 },
+               ],
+               name: '',
+               resourceBytes: 300,
                unusedBytes: 50,
              },
            ],
-           name: '',
-           resourceBytes: 300,
-           unusedBytes: 50,
          }
       );
     });
 
     it('creates directory node when multiple leaf nodes', () => {
-      const rootNode = ScriptTreemapData.prepareTreemapNodes('', {
+      const rootNode = ScriptTreemapData.makeRootNodeFromScriptWithSourceMap('', {
         'folder/a.js': {resourceBytes: 100},
         'folder/b.js': {resourceBytes: 100},
       });
@@ -176,27 +186,32 @@ describe('ScriptTreemapData audit', () => {
     });
 
     it('flattens directory node when single leaf nodes', () => {
-      const rootNode = ScriptTreemapData.prepareTreemapNodes('', {
+      const rootNode = ScriptTreemapData.makeRootNodeFromScriptWithSourceMap(src, '', {
         'root/folder1/a.js': {resourceBytes: 100},
         'root/folder2/b.js': {resourceBytes: 100},
       });
       expect(rootNode).toMatchObject(
-         {
-           children: [
-             {
-               children: undefined,
-               name: 'folder1/a.js',
-               resourceBytes: 100,
-             },
-             {
-               children: undefined,
-               name: 'folder2/b.js',
-               resourceBytes: 100,
-             },
-           ],
-           name: '/root',
-           resourceBytes: 200,
-         }
+        {
+          name: src,
+          children: [
+            {
+              children: [
+                {
+                  children: undefined,
+                  name: 'folder1/a.js',
+                  resourceBytes: 100,
+                },
+                {
+                  children: undefined,
+                  name: 'folder2/b.js',
+                  resourceBytes: 100,
+                },
+              ],
+              name: '/root',
+              resourceBytes: 200,
+            },
+          ],
+        }
       );
     });
 
@@ -205,30 +220,36 @@ describe('ScriptTreemapData audit', () => {
         'some/prefix/main.js': {resourceBytes: 100, unusedBytes: 50},
         'not/some/prefix/a.js': {resourceBytes: 101, unusedBytes: 51},
       };
-      const rootNode = ScriptTreemapData.prepareTreemapNodes('some/prefix', sourcesData);
+      const rootNode = ScriptTreemapData
+        .makeRootNodeFromScriptWithSourceMap(src, 'some/prefix', sourcesData);
       expect(rootNode).toMatchObject(
-         {
-           children: [
-             {
-               children: undefined,
-               name: '/main.js',
-               resourceBytes: 100,
-               unusedBytes: 50,
-             },
-             {
-               children: undefined,
-               name: 'not/a.js',
-               resourceBytes: 101,
-               unusedBytes: 51,
-             },
-           ],
-           name: 'some/prefix',
-           resourceBytes: 201,
-           unusedBytes: 101,
-         }
+        {
+          name: src,
+          children: [
+            {
+              name: 'some/prefix',
+              resourceBytes: 201,
+              unusedBytes: 101,
+              children: [
+                {
+                  children: undefined,
+                  name: '/main.js',
+                  resourceBytes: 100,
+                  unusedBytes: 50,
+                },
+                {
+                  children: undefined,
+                  name: 'not/a.js',
+                  resourceBytes: 101,
+                  unusedBytes: 51,
+                },
+              ],
+            },
+          ],
+        }
       );
 
-      expect(rootNode.name).toBe('some/prefix');
+      expect(rootNode.children && rootNode.children[0].name).toBe('some/prefix');
       expect(rootNode.resourceBytes).toBe(201);
       expect(rootNode.unusedBytes).toBe(101);
 
@@ -243,36 +264,42 @@ describe('ScriptTreemapData audit', () => {
         'lib/folder/b.js': {resourceBytes: 101},
         'lib/c.js': {resourceBytes: 100, unusedBytes: 25},
       };
-      const rootNode = ScriptTreemapData.prepareTreemapNodes('', sourcesData);
+      const rootNode = ScriptTreemapData
+        .makeRootNodeFromScriptWithSourceMap(src, '', sourcesData);
       expect(rootNode).toMatchObject(
-         {
-           children: [
-             {
-               children: [
-                 {
-                   name: 'a.js',
-                   resourceBytes: 100,
-                   unusedBytes: 50,
-                 },
-                 {
-                   name: 'b.js',
-                   resourceBytes: 101,
-                 },
-               ],
-               name: 'folder',
-               resourceBytes: 201,
-               unusedBytes: 50,
-             },
-             {
-               name: 'c.js',
-               resourceBytes: 100,
-               unusedBytes: 25,
-             },
-           ],
-           name: '/lib',
-           resourceBytes: 301,
-           unusedBytes: 75,
-         }
+        {
+          name: src,
+          children: [
+            {
+              children: [
+                {
+                  children: [
+                    {
+                      name: 'a.js',
+                      resourceBytes: 100,
+                      unusedBytes: 50,
+                    },
+                    {
+                      name: 'b.js',
+                      resourceBytes: 101,
+                    },
+                  ],
+                  name: 'folder',
+                  resourceBytes: 201,
+                  unusedBytes: 50,
+                },
+                {
+                  name: 'c.js',
+                  resourceBytes: 100,
+                  unusedBytes: 25,
+                },
+              ],
+              name: '/lib',
+              resourceBytes: 301,
+              unusedBytes: 75,
+            },
+          ],
+        }
       );
     });
 
@@ -286,16 +313,44 @@ describe('ScriptTreemapData audit', () => {
         'node_modules/dep/b.js': {resourceBytes: 100, unusedBytes: 25, duplicatedNormalizedModuleName: 'dep/b.js'},
         /* eslint-enable max-len */
       };
-      const rootNode = ScriptTreemapData.prepareTreemapNodes('', sourcesData);
+      const rootNode = ScriptTreemapData
+        .makeRootNodeFromScriptWithSourceMap(src, '', sourcesData);
       expect(rootNode).toMatchObject(
          {
+           name: src,
            children: [
              {
+               name: '',
+               resourceBytes: 502,
+               unusedBytes: 100,
                children: [
                  {
-                   children: undefined,
-                   name: 'folder/a.js',
-                   resourceBytes: 100,
+                   children: [
+                     {
+                       children: undefined,
+                       name: 'folder/a.js',
+                       resourceBytes: 100,
+                       unusedBytes: 50,
+                     },
+                     {
+                       children: [
+                         {
+                           duplicatedNormalizedModuleName: 'dep/a.js',
+                           name: 'a.js',
+                           resourceBytes: 101,
+                         },
+                         {
+                           duplicatedNormalizedModuleName: 'dep/b.js',
+                           name: 'b.js',
+                           resourceBytes: 101,
+                         },
+                       ],
+                       name: 'node_modules/dep',
+                       resourceBytes: 202,
+                     },
+                   ],
+                   name: 'lib',
+                   resourceBytes: 302,
                    unusedBytes: 50,
                  },
                  {
@@ -303,45 +358,23 @@ describe('ScriptTreemapData audit', () => {
                      {
                        duplicatedNormalizedModuleName: 'dep/a.js',
                        name: 'a.js',
-                       resourceBytes: 101,
+                       resourceBytes: 100,
+                       unusedBytes: 25,
                      },
                      {
                        duplicatedNormalizedModuleName: 'dep/b.js',
                        name: 'b.js',
-                       resourceBytes: 101,
+                       resourceBytes: 100,
+                       unusedBytes: 25,
                      },
                    ],
                    name: 'node_modules/dep',
-                   resourceBytes: 202,
+                   resourceBytes: 200,
+                   unusedBytes: 50,
                  },
                ],
-               name: 'lib',
-               resourceBytes: 302,
-               unusedBytes: 50,
-             },
-             {
-               children: [
-                 {
-                   duplicatedNormalizedModuleName: 'dep/a.js',
-                   name: 'a.js',
-                   resourceBytes: 100,
-                   unusedBytes: 25,
-                 },
-                 {
-                   duplicatedNormalizedModuleName: 'dep/b.js',
-                   name: 'b.js',
-                   resourceBytes: 100,
-                   unusedBytes: 25,
-                 },
-               ],
-               name: 'node_modules/dep',
-               resourceBytes: 200,
-               unusedBytes: 50,
              },
            ],
-           name: '',
-           resourceBytes: 502,
-           unusedBytes: 100,
          }
       );
     });

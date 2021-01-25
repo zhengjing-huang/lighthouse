@@ -27,17 +27,17 @@ class TreemapViewer {
     /** @type {import('../../../lighthouse-core/audits/script-treemap-data').TreemapData} */
     const scriptRootNodes = treemapDebugData.treemapData;
 
-    /** @type {WeakMap<LH.Treemap.Node, LH.Treemap.RootNodeContainer>} */
+    /** @type {WeakMap<LH.Treemap.Node, LH.Treemap.Node>} */
     this.nodeToRootNodeMap = new WeakMap();
 
-    /** @type {{[group: string]: LH.Treemap.RootNodeContainer[]}} */
+    /** @type {{[group: string]: LH.Treemap.Node[]}} */
     this.rootNodesByGroup = {
       scripts: scriptRootNodes,
     };
 
     for (const rootNodes of Object.values(this.rootNodesByGroup)) {
       for (const rootNode of rootNodes) {
-        TreemapUtil.walk(rootNode.node, node => this.nodeToRootNodeMap.set(node, rootNode));
+        TreemapUtil.walk(rootNode, node => this.nodeToRootNodeMap.set(node, rootNode));
       }
     }
 
@@ -53,7 +53,7 @@ class TreemapViewer {
   }
 
   createHeader() {
-    const urlEl = /** @type {HTMLAnchorElement} */ (TreemapUtil.find('.lh-header--url'));
+    const urlEl = TreemapUtil.find('a.lh-header--url');
     urlEl.textContent = this.documentUrl;
     urlEl.href = this.documentUrl;
     TreemapUtil.find('.lh-header--size').textContent =
@@ -96,20 +96,22 @@ class TreemapViewer {
   createRootNodeForGroup(group) {
     const rootNodes = this.rootNodesByGroup[group];
 
-    const children = rootNodes.map(rootNode => {
-      // TODO: keep?
-      // Wrap with the name of the rootNode. Only for bundles.
-      if (group === 'scripts' && rootNode.node.children) {
-        return {
-          name: rootNode.name,
-          children: [rootNode.node],
-          resourceBytes: rootNode.node.resourceBytes,
-          unusedBytes: rootNode.node.unusedBytes,
-        };
-      }
+    const children = rootNodes;
+    // const children = rootNodes.map(rootNode => {
+    //   // TODO: keep?
+    //   // Wrap with the name of the rootNode. Only for bundles.
+    //   if (group === 'scripts' && rootNode.node.children) {
+    //     return {
+    //       name: rootNode.name,
+    //       children: [rootNode.node],
+    //       resourceBytes: rootNode.node.resourceBytes,
+    //       unusedBytes: rootNode.node.unusedBytes,
+    //     };
+    //   }
 
-      return rootNode.node;
-    });
+    //   return rootNode.node;
+    // });
+
 
     return {
       name: this.documentUrl,
@@ -121,6 +123,7 @@ class TreemapViewer {
 
   show() {
     const group = 'scripts';
+
     this.currentRootNode = this.createRootNodeForGroup(group);
     const rootNodes = this.rootNodesByGroup[group];
     renderViewModeOptions(rootNodes);
@@ -210,7 +213,7 @@ class TreemapViewer {
 }
 
 /**
- * @param {LH.Treemap.RootNodeContainer[]} rootNodes
+ * @param {LH.Treemap.Node[]} rootNodes
  */
 function renderViewModeOptions(rootNodes) {
   const viewModesEl = TreemapUtil.find('.lh-modes');
@@ -235,7 +238,7 @@ function renderViewModeOptions(rootNodes) {
 
   let bytes = 0;
   for (const rootNode of rootNodes) {
-    TreemapUtil.walk(rootNode.node, node => {
+    TreemapUtil.walk(rootNode, node => {
       // Only consider leaf nodes.
       if (node.children) return;
 
@@ -263,7 +266,7 @@ function injectOptions(options) {
  * @param {LH.Treemap.Options} options
  */
 function init(options) {
-  treemapViewer = new TreemapViewer(options, TreemapUtil.find('.lh-treemap'));
+  treemapViewer = new TreemapViewer(options, TreemapUtil.find('div.lh-treemap'));
 
   injectOptions(options);
 
