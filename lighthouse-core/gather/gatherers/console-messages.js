@@ -11,7 +11,7 @@
 
 'use strict';
 
-const Gatherer = require('../../fraggle-rock/gather/base-gatherer.js');
+const FRGatherer = require('../../fraggle-rock/gather/base-gatherer.js');
 
 /**
  * @param {LH.Crdp.Runtime.RemoteObject} obj
@@ -30,7 +30,7 @@ function remoteObjectToString(obj) {
   return `[${type} ${className}]`;
 }
 
-class ConsoleMessages extends Gatherer {
+class ConsoleMessages extends FRGatherer {
   /** @type {LH.Gatherer.GathererMeta} */
   meta = {
     supportedModes: ['timespan', 'navigation'],

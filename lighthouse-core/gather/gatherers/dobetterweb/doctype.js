@@ -5,7 +5,7 @@
  */
 'use strict';
 
-const Gatherer = require('../../../fraggle-rock/gather/base-gatherer.js');
+const FRGatherer = require('../../../fraggle-rock/gather/base-gatherer.js');
 
 /* global document */
 
@@ -24,7 +24,7 @@ function getDoctype() {
   return {name, publicId, systemId};
 }
 
-class Doctype extends Gatherer {
+class Doctype extends FRGatherer {
   /** @type {LH.Gatherer.GathererMeta} */
   meta = {
     supportedModes: ['snapshot', 'navigation'],

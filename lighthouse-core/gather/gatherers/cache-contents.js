@@ -7,7 +7,7 @@
 
 /* global caches */
 
-const Gatherer = require('../../fraggle-rock/gather/base-gatherer.js');
+const FRGatherer = require('../../fraggle-rock/gather/base-gatherer.js');
 
 /**
  * @return {Promise<Array<string>>}
@@ -37,7 +37,7 @@ function getCacheContents() {
 }
 /* c8 ignore stop */
 
-class CacheContents extends Gatherer {
+class CacheContents extends FRGatherer {
   /** @type {LH.Gatherer.GathererMeta} */
   meta = {
     supportedModes: ['snapshot', 'navigation'],

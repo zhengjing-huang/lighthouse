@@ -5,7 +5,7 @@
  */
 'use strict';
 
-const Gatherer = require('../../fraggle-rock/gather/base-gatherer.js');
+const FRGatherer = require('../../fraggle-rock/gather/base-gatherer.js');
 
 /* global window */
 
@@ -27,7 +27,7 @@ function getViewportDimensions() {
 }
 /* c8 ignore stop */
 
-class ViewportDimensions extends Gatherer {
+class ViewportDimensions extends FRGatherer {
   /** @type {LH.Gatherer.GathererMeta} */
   meta = {
     supportedModes: ['snapshot', 'navigation'],

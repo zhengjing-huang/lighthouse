@@ -7,7 +7,7 @@
 
 /* global getNodeDetails */
 
-const Gatherer = require('../../fraggle-rock/gather/base-gatherer.js');
+const FRGatherer = require('../../fraggle-rock/gather/base-gatherer.js');
 const pageFunctions = require('../../lib/page-functions.js');
 
 /* eslint-env browser, node */
@@ -84,7 +84,7 @@ function collectFormElements() {
 }
 /* c8 ignore stop */
 
-class FormElements extends Gatherer {
+class FormElements extends FRGatherer {
   /** @type {LH.Gatherer.GathererMeta} */
   meta = {
     supportedModes: ['snapshot', 'navigation'],
@@ -94,10 +94,10 @@ class FormElements extends Gatherer {
    * @param {LH.Gatherer.FRTransitionalContext} passContext
    * @return {Promise<LH.Artifacts['FormElements']>}
    */
-  snapshot(passContext) {
+  async snapshot(passContext) {
     const driver = passContext.driver;
 
-    return driver.evaluate(collectFormElements, {
+    const formElements = await driver.evaluate(collectFormElements, {
       args: [],
       useIsolation: true,
       deps: [
@@ -105,6 +105,7 @@ class FormElements extends Gatherer {
         pageFunctions.getNodeDetailsString,
       ],
     });
+    return formElements;
   }
 }
 

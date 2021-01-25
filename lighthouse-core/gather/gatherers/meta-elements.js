@@ -5,7 +5,7 @@
  */
 'use strict';
 
-const Gatherer = require('../../fraggle-rock/gather/base-gatherer.js');
+const FRGatherer = require('../../fraggle-rock/gather/base-gatherer.js');
 const pageFunctions = require('../../lib/page-functions.js');
 
 /* globals getElementsInDocument */
@@ -32,7 +32,7 @@ function collectMetaElements() {
 }
 /* c8 ignore stop */
 
-class MetaElements extends Gatherer {
+class MetaElements extends FRGatherer {
   /** @type {LH.Gatherer.GathererMeta} */
   meta = {
     supportedModes: ['snapshot', 'navigation'],

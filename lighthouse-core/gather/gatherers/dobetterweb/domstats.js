@@ -13,7 +13,7 @@
 
 'use strict';
 
-const Gatherer = require('../../../fraggle-rock/gather/base-gatherer.js');
+const FRGatherer = require('../../../fraggle-rock/gather/base-gatherer.js');
 const pageFunctions = require('../../../lib/page-functions.js');
 
 /**
@@ -76,7 +76,7 @@ function getDOMStats(element = document.body, deep = true) {
 }
 /* c8 ignore stop */
 
-class DOMStats extends Gatherer {
+class DOMStats extends FRGatherer {
   /** @type {LH.Gatherer.GathererMeta} */
   meta = {
     supportedModes: ['snapshot', 'navigation'],

@@ -5,11 +5,11 @@
  */
 'use strict';
 
-const Gatherer = require('../../../fraggle-rock/gather/base-gatherer.js');
+const FRGatherer = require('../../../fraggle-rock/gather/base-gatherer.js');
 
 /* global document */
 
-class AppCacheManifest extends Gatherer {
+class AppCacheManifest extends FRGatherer {
   /** @type {LH.Gatherer.GathererMeta} */
   meta = {
     supportedModes: ['snapshot', 'navigation'],

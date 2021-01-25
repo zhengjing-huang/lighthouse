@@ -12,9 +12,9 @@
  * around page unload, but this can be expanded in the future.
  */
 
-const Gatherer = require('../../fraggle-rock/gather/base-gatherer.js');
+const FRGatherer = require('../../fraggle-rock/gather/base-gatherer.js');
 
-class GlobalListeners extends Gatherer {
+class GlobalListeners extends FRGatherer {
   /** @type {LH.Gatherer.GathererMeta} */
   meta = {
     supportedModes: ['snapshot', 'navigation'],

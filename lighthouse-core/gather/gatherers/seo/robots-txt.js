@@ -5,7 +5,7 @@
  */
 'use strict';
 
-const Gatherer = require('../../../fraggle-rock/gather/base-gatherer.js');
+const FRGatherer = require('../../../fraggle-rock/gather/base-gatherer.js');
 
 /* global fetch, URL, location */
 
@@ -26,7 +26,7 @@ async function getRobotsTxtContent() {
 }
 /* c8 ignore stop */
 
-class RobotsTxt extends Gatherer {
+class RobotsTxt extends FRGatherer {
   /** @type {LH.Gatherer.GathererMeta} */
   meta = {
     supportedModes: ['snapshot', 'navigation'],
