@@ -108,7 +108,7 @@ class TreemapViewer {
 
     const rootNodes = this.rootNodesByGroup[group];
     this.currentRootNode = this.wrapNodesInNewRootNode(rootNodes);
-    renderViewModeOptions(rootNodes);
+    renderViewModeOptions(this.currentRootNode.resourceBytes);
 
     TreemapUtil.walk(this.currentRootNode, node => {
       // @ts-ignore: webtreemap will store `dom` on the data to speed up operations.
@@ -195,9 +195,9 @@ class TreemapViewer {
 }
 
 /**
- * @param {LH.Treemap.Node[]} rootNodes
+ * @param {number} scriptsResourceSize
  */
-function renderViewModeOptions(rootNodes) {
+function renderViewModeOptions(scriptsResourceSize) {
   const viewModesEl = TreemapUtil.find('.lh-modes');
   viewModesEl.innerHTML = '';
 
@@ -218,16 +218,7 @@ function renderViewModeOptions(rootNodes) {
     });
   }
 
-  let bytes = 0;
-  for (const rootNode of rootNodes) {
-    TreemapUtil.walk(rootNode, node => {
-      // Only consider leaf nodes.
-      if (node.children) return;
-
-      bytes += node.resourceBytes;
-    });
-  }
-  makeViewMode('All', bytes);
+  makeViewMode('All', scriptsResourceSize);
 }
 
 /**
